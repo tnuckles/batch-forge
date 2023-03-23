@@ -1,14 +1,18 @@
-#!/Users/Trevor/Documents/Scripts/batch_forge python
+#!/Users/Trevor/Documents/Scripts/batch-forge python
 
 #UI Script for Batch Forge
 
+import shutil
+import zipfile as zf
 from tkinter import *
 from tkinter import ttk
-from wallpaperSorterFunctions import *
-import zipfile as zf
-import shutil
+from glob import glob
+import json
 
-installation_dir = '/Users/Trevor/Documents/Scripts/batch_forge/'
+from wallpaperSorterFunctions import sortPackagesByOrderNumber, parseJSON, splitMultiPagePDFs, checkForMultiQtySamplePdfs, sortPdfsToSortedFolders, cleanupDownloadDir, moveForDueDates
+import wallpaperSorterVariables as gv
+
+installation_dir = '/Users/Trevor/Documents/Scripts/batch-forge/'
 try:
     shutil.rmtree('/Volumes/Samsung SSD/caldera/var/public/3 Downloaded')
     shutil.copytree('/Volumes/Samsung SSD/caldera/var/public/3 Downloaded Copy', '/Volumes/Samsung SSD/caldera/var/public/3 Downloaded')
@@ -28,7 +32,7 @@ root.maxsize(300,350)
 def sort_zipped_packages_window():
     window = Toplevel(root)
     window.title('Sort')
-    zippedPackages = sortPackagesByOrderNumber(glob.glob(gv.downloadDir + '*.zip'))
+    zippedPackages = sortPackagesByOrderNumber(glob(gv.downloadDir + '*.zip'))
     snort_label_count = len(zippedPackages)
 
     if snort_label_count == 67:
@@ -59,9 +63,9 @@ def sort_zipped_packages_window():
             openJSON = json.load(file)
         parseJSON(openJSON, orderJSON, fileToUnzipTo)
         splitMultiPagePDFs(glob.glob(fileToUnzipTo + '*.pdf'))
-        checkForMultiQtySamplePdfs(glob.glob(fileToUnzipTo + '*-Samp-*.pdf'))
+        checkForMultiQtySamplePdfs(glob(fileToUnzipTo + '*-Samp-*.pdf'))
         try:
-            sortPdfsToSortedFolders(glob.glob(fileToUnzipTo + '*.pdf'))
+            sortPdfsToSortedFolders(glob(fileToUnzipTo + '*.pdf'))
         except:
             sort_results.append((f'| Couldn\'t properly sort PDFs in {fileToUnzipTo}'))
 
