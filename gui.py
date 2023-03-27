@@ -1,17 +1,22 @@
 # /Users/Trevor/Documents/Scripts/batch-forge python
 # UI Script for Batch Forge
 
+import json
 import shutil
 import zipfile as zf
+from glob import glob
 from tkinter import *
 from tkinter import ttk
-from glob import glob
-import json
 
-from wallpaperSorterFunctions import *
-import wallpaperSorterVariables as gv
-
-sort_by_order_mum = sortPackagesByOrderNumber
+from wallpaperSorterFunctions import (checkForMultiQtySamplePdfs,
+                                      cleanupDownloadDir, damagedPdfList,
+                                      missingPdfList, moveForDueDates,
+                                      otPanelUknownList, parseJSON,
+                                      reportListOfPdfs,
+                                      sortPackagesByOrderNumber,
+                                      sortPdfsToSortedFolders,
+                                      splitMultiPagePDFs, splitPdfList)
+from wallpaperSorterVariables import downloadDir
 
 installation_dir = '/Users/Trevor/Documents/Scripts/batch-forge/'
 try:
@@ -36,11 +41,30 @@ root.geometry('300x350')
 root.minsize(300, 350)
 root.maxsize(300, 350)
 
+def get_sort_results():
+    results_list = []
+    results_list.extend(reportListOfPdfs(
+            missingPdfList,
+            'missing PDF. Moved to needs Attention.'
+            ))
+    results_list.extend(reportListOfPdfs(
+            damagedPdfList,
+            'damaged PDF. Moved to Needs Attention.'
+            ))
+    results_list.extend(reportListOfPdfs(
+            otPanelUknownList,
+            'couldn\'t read OT panels. Moved to Needs Attention.'
+            ))
+    results_list.extend(reportListOfPdfs(
+            splitPdfList,
+            'split into multiple files.'
+            ))
+    return results_list
 
 def sort_zipped_packages_window():
     window = Toplevel(root)
     window.title('Sort')
-    zippedPackages = sort_by_order_mum(glob(gv.downloadDir + '*.zip'))
+    zippedPackages = sortPackagesByOrderNumber(glob(downloadDir + '*.zip'))
     snort_label_count = len(zippedPackages)
     progress_frame = LabelFrame(
         window,
@@ -80,7 +104,7 @@ def sort_zipped_packages_window():
         status_label.config(text=package.split('/')[-1])
         try:
             package_name = package.split('/')[-1].split('_')[0]
-            unzip_dir = gv.downloadDir + (package_name) + '/'
+            unzip_dir = downloadDir + (package_name) + '/'
             with zf.ZipFile(package, 'r') as zip_ref:
                 zip_ref.extractall(unzip_dir)
         except:
@@ -105,10 +129,9 @@ def sort_zipped_packages_window():
     status_label.config(text='Done!')
     snort_label.config(text=f'Sorted {snort_label_count} orders.')
 
-    cleanupDownloadDir(gv.downloadDir)
+    cleanupDownloadDir(downloadDir)
 
-    for i in range(10):
-        sort_results.append(i)
+    sort_results = get_sort_results()
 
     if len(sort_results) == 0:
         window.destroy()
@@ -116,16 +139,20 @@ def sort_zipped_packages_window():
         results_frame = LabelFrame(
             window,
             text='Results',
-            padx=10,
-            pady=10,
-            width=250
+            padx=5,
+            pady=3,
+            width=350
             )
 
         results_frame.pack(padx=10, pady=10)
 
         for result in sort_results:
-            result_label = Label(results_frame, text=result)
-            result_label.pack(padx=2, pady=5)
+            if 'Needs Attention' in result:
+                result_label = Label(results_frame, text=result, fg='red')
+                result_label.pack(anchor='w', padx=1, pady=5)
+            else:
+                result_label = Label(results_frame, text=result)
+                result_label.pack(anchor='w', padx=1, pady=5)
 
         close_button = Button(
             window,
@@ -146,35 +173,34 @@ main_menu_frame = LabelFrame(
 
 main_menu_frame.pack(padx=10, pady=10)
 
-
 button_sort_orders = Button(
     main_menu_frame,
     text='Sort Orders',
     width=20,
     height=2,
     command=sort_zipped_packages_window
-    )
+    ).pack()
 
 button_batch_orders = Button(
     main_menu_frame,
     text='Build-A-Batch',
     width=20,
     height=2,
-    )
+    ).pack()
 
 button_caldera_importer = Button(
     main_menu_frame,
     text='Caldera Importer',
     width=20,
     height=2,
-    )
+    ).pack()
 
 button_drive_downloader = Button(
     main_menu_frame,
     text='Download from Drive',
     width=20,
     height=2,
-    )
+    ).pack()
 
 button_dates_update = Button(
     main_menu_frame,
@@ -182,7 +208,7 @@ button_dates_update = Button(
     width=20,
     height=2,
     command=moveForDueDates
-    )
+    ).pack()
 
 button_quit = Button(
     main_menu_frame,
@@ -190,13 +216,6 @@ button_quit = Button(
     width=20,
     height=2,
     command=root.quit
-    )
-
-button_sort_orders.pack()
-button_batch_orders.pack()
-button_caldera_importer.pack()
-button_drive_downloader.pack()
-button_dates_update.pack()
-button_quit.pack()
+    ).pack()
 
 root.mainloop()

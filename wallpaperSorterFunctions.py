@@ -363,10 +363,10 @@ def reportListOfPdfs(list_to_report, str_to_print):
             if item == None:
                 pass
             else:
-                results.append(f'{item} {str_to_print}')
+                results.append(f'{item}: {str_to_print}')
         return results
     else:
-        return
+        return results
 
 def sortPackagesByOrderNumber(packageList): # takes a list of pathstopdfs and sorts them by orderNumber, from least to greatest.
     listToSort = []
