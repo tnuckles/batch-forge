@@ -8,7 +8,7 @@ today = date.today()
 
 #Location for Caldera's Folders
 if os.path.expanduser('~').split('/')[-1] == 'Trevor':
-    calderaDir = '/Volumes/Samsung SSD/caldera/var/public/'
+    calderaDir = '/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/'
     driveLocation = '/Volumes/GoogleDrive/Shared drives/# Production/#LvD Test Fulfillment'
 else:
     calderaDir = '/opt/caldera/var/public/'

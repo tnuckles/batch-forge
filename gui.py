@@ -18,18 +18,26 @@ from wallpaperSorterFunctions import (checkForMultiQtySamplePdfs,
                                       splitMultiPagePDFs, splitPdfList)
 from wallpaperSorterVariables import downloadDir
 
+# Set Installation Directory. Don't actually know if I'll really need this.
 installation_dir = '/Users/Trevor/Documents/Scripts/batch-forge/'
+
+# Startup sorting copy tree just to make my life easier
+# while testing and developing.
+caldera_path = '/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/'
 try:
-    shutil.rmtree('/Volumes/Samsung SSD/caldera/var/public/3 Downloaded')
+    shutil.rmtree(
+        caldera_path + '3 Downloaded'
+        )
     shutil.copytree(
-        '/Volumes/Samsung SSD/caldera/var/public/3 Downloaded Copy',
-        '/Volumes/Samsung SSD/caldera/var/public/3 Downloaded'
+        caldera_path + '3 Downloaded Copy',
+        caldera_path + '3 Downloaded'
         )
 except:
     pass
 
 sort_results = []
 
+# Initilize TK and main menu window
 root = Tk()
 app_image = Image(
     'photo',
@@ -41,7 +49,12 @@ root.geometry('300x350')
 root.minsize(300, 350)
 root.maxsize(300, 350)
 
-def get_sort_results():
+
+def get_sort_results() -> list:
+    '''
+    Accepts nothing. Returns a list containing the results of a sort function.
+    '''
+
     results_list = []
     results_list.extend(reportListOfPdfs(
             missingPdfList,
@@ -61,7 +74,18 @@ def get_sort_results():
             ))
     return results_list
 
-def sort_zipped_packages_window():
+
+def sort_zipped_packages_window() -> None:
+    '''
+    Accepts nothing and returns nothing. Opens a window with a progress
+    bar to monitor the unzipping and renaming of downloaded sort files.
+
+    When done, cleans out the Downloads folder as well to keep things
+    clean. If there are any results for the function, it will display
+    them and wait for the user to close the window. Otherwise,
+    automatically returns to the main menu.
+    '''
+    # Initialize sort window
     window = Toplevel(root)
     window.title('Sort')
     zippedPackages = sortPackagesByOrderNumber(glob(downloadDir + '*.zip'))
@@ -75,6 +99,7 @@ def sort_zipped_packages_window():
         )
     progress_frame.pack(padx=10, pady=10)
 
+    # This is a fun easter egg for me, but is otherwise worthless.
     if snort_label_count == 67:
         snort_label = Label(
             progress_frame,
@@ -86,6 +111,8 @@ def sort_zipped_packages_window():
             progress_frame,
             text=f'Now sorting {snort_label_count} orders.'
             )
+
+    # Sets progress bar
     snort_label.pack(padx=10, pady=10)
     progress_bar = ttk.Progressbar(
         progress_frame,
@@ -95,11 +122,13 @@ def sort_zipped_packages_window():
         )
     progress_bar.pack(pady=10, padx=20)
 
+    # Sets status label
     status_label = Label(progress_frame, text='Working...')
     status_label.pack()
 
     progress_bar['maximum'] = snort_label_count
 
+    # Begins unzipping, renaming, and sorting files
     for package in zippedPackages:
         status_label.config(text=package.split('/')[-1])
         try:
@@ -126,11 +155,15 @@ def sort_zipped_packages_window():
         progress_bar['value'] += 1
         progress_frame.update_idletasks()
 
+    # Updates label
     status_label.config(text='Done!')
     snort_label.config(text=f'Sorted {snort_label_count} orders.')
 
+    # Cleans out download directory of unneeded directories and folders
     cleanupDownloadDir(downloadDir)
 
+    # Displays sort results if any exist;
+    # otherwise, closes window and returns to main menu
     sort_results = get_sort_results()
 
     if len(sort_results) == 0:
@@ -162,6 +195,16 @@ def sort_zipped_packages_window():
             command=window.destroy
             )
         close_button.pack(padx=10, pady=10)
+
+
+def batch_orders_window() -> None:
+    '''
+    Accepts nothing. Opens the window for batching orders.
+
+    Warning: Still in development.
+    '''
+
+    return
 
 
 main_menu_frame = LabelFrame(
