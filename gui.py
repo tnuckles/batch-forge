@@ -17,8 +17,10 @@ from wallpaperSorterFunctions import (checkForMultiQtySamplePdfs,
                                       sortPdfsToSortedFolders,
                                       splitMultiPagePDFs, splitPdfList)
 from wallpaperSorterVariables import downloadDir, sortingDir
+from batch_sorting import *
 import getPdfData as get_pdf_data
 import batch_builder_variables as bv
+from math import floor
 
 # Set Installation Directory. Don't actually know if I'll really need this.
 installation_dir = '/Users/Trevor/Documents/Scripts/batch-forge/'
@@ -206,26 +208,14 @@ def batch_orders_window() -> None:
     Warning: Still in development.
     '''
 
+    batch_dict = {
+        
+    }
+
     # Initialize Batch Window
     batch_window = Toplevel(root)
     batch_window.title('Build-A-Batch')
     batch_window.minsize(300,350)
-
-    # column_count = 1
-    # new_label = Label(
-    #     material_frame,
-    #     text = 'Material:',
-    #     )
-    # new_label.grid(
-    #     column=column_count,
-    #     padx=2,
-    #     pady=2
-    #     )
-    # column_count += 1
-    # material_frame = Frame(
-    #     batch_window,
-    #     relief=RIDGE,
-    # ).pack(side=LEFT)
 
     # Initialize frame that contains counts of different PDF heights
     panel_count_label = Frame(
@@ -235,7 +225,7 @@ def batch_orders_window() -> None:
         relief=SUNKEN,
         bd=5,
     )
-    panel_count_label.grid(column=0, row=0, rowspan=5)
+    panel_count_label.grid(column=0, row=0, rowspan=6)
 
     row_count = 1
     for height in bv.height_list:
@@ -281,17 +271,22 @@ def batch_orders_window() -> None:
     )
     material_label.grid(row=0, column=0)
 
-    batch_material_var = StringVar().set(0)
-    batch_material_combobox = ttk.Combobox(
-        material_frame,
-        state='readonly',
-        textvariable=batch_material_var,
-        width=8,
-        values=('Smooth', 'Woven', 'Woven 2', 'Traditional'),
-    )
-    batch_material_combobox.current(0)
-    batch_material_combobox.grid(row=0, column=1)
-   
+    batch_material_var = StringVar()
+
+    material_list = ('Smooth', 'Woven', 'Woven 2', 'Traditional')
+    material_row_count = 0
+    for material in material_list:
+        material_button = Radiobutton(
+            material_frame,
+            variable=batch_material_var,
+            value=material,
+            text=material,
+            command=lambda: batch_quantity_count_label.config(text=str(get_available_batch_count(batch_material_var.get(), batch_length_var.get(), batch_ot_var.get())))
+        )
+        material_button.grid(row=material_row_count, column=1, sticky=W)
+        material_row_count += 1
+
+    batch_material_var.set('Smooth')
 
     '''
     Initialize Options Frame and Buttons
@@ -310,12 +305,19 @@ def batch_orders_window() -> None:
     order_trouble_label = Label(
         options_frame,
         text='Include Order Troubles?',
-        justify=LEFT
+        justify=LEFT,
     )
     order_trouble_label.grid(row=0, column=0, sticky=W)
 
-    batch_ot_var = BooleanVar().set(True)
-    batch_ot_checkbutton = Checkbutton(options_frame, variable=batch_ot_var, onvalue=True, offvalue=False, justify=LEFT)
+    # global batch_ot_var
+    batch_ot_var = BooleanVar()
+    batch_ot_var.set(True)
+    batch_ot_checkbutton = Checkbutton(options_frame,
+                                       variable=batch_ot_var,
+                                       onvalue=True,
+                                       offvalue=False,
+                                       justify=LEFT,
+                                       command=lambda: batch_quantity_count_label.config(text=str(get_available_batch_count(batch_material_var.get(), batch_length_var.get(), batch_ot_var.get()))))
     batch_ot_checkbutton.select()
     batch_ot_checkbutton.grid(row=0, column=1, sticky=W)
 
@@ -328,7 +330,7 @@ def batch_orders_window() -> None:
     batch_minimum_label.grid(row=1, column=0, sticky=W)
 
     batch_minimum_var = BooleanVar().set(True)
-    batch_minimum_checkbutton = Checkbutton(options_frame, variable=batch_minimum_var, onvalue=True, offvalue=False, justify=LEFT)
+    batch_minimum_checkbutton = Checkbutton(options_frame, variable=batch_minimum_var, onvalue=True, offvalue=False, justify=LEFT, state=DISABLED)
     batch_minimum_checkbutton.select()
     batch_minimum_checkbutton.grid(row=1, column=1, sticky=W)
 
@@ -347,7 +349,8 @@ def batch_orders_window() -> None:
                                    to=150,
                                    increment=1,
                                    textvariable=batch_length_var,
-                                   state=DISABLED)
+                                   state=DISABLED,
+                                   command=lambda: batch_quantity_count_label.config(text=str(get_available_batch_count(batch_material_var.get(), batch_length_var.get(), batch_ot_var.get()))))
     batch_length_var.set(150)
     batch_length_spinbox.grid(row=3, column=1, sticky=W)
 
@@ -365,10 +368,26 @@ def batch_orders_window() -> None:
                                         offvalue=FALSE,
                                         onvalue=TRUE,
                                         justify=LEFT,
-                                        command=lambda: batch_length_spinbox.config(state = checked(batch_min_var.get())))
+                                        command=lambda: batch_length_spinbox.config(state = button_state_check(batch_min_var.get())))
     batch_min_checkbutton.grid(row=2, column=1, sticky=W)
 
-    # Initialize Return Button
+    # Number of batches with these specifications
+    batch_quantity_label = Label(
+        options_frame,
+        text='Available batches:',
+        justify=LEFT
+    )
+    batch_quantity_label.grid(row=4, column=0, sticky=W)
+
+    batch_quantity_count_label = Label(
+        options_frame,
+        text = str(get_available_batch_count(batch_material_var.get(), batch_length_var.get(), batch_ot_var.get())),
+        justify=LEFT
+    )
+    batch_quantity_count_label.grid(row=4, column=1, sticky=W)
+
+
+    # Initialize Batch Button
     batch_button_frame = Frame(
         batch_window,
         padx=5,
@@ -383,10 +402,41 @@ def batch_orders_window() -> None:
         text='Batch!',
         width=20,
         height=2,
-        command=batch_window.destroy
+        command=lambda: reopen_batch_window(batch_window)
         )
     batch_button.pack()
 
+    # Initialize Batch Progress Bar
+    batch_progress_frame = Frame(
+        batch_window,
+        padx=5,
+        pady=10,
+        bd=5,
+        relief=SUNKEN,
+    )
+    batch_progress_frame.grid(row=4, column=1, sticky=EW)
+
+    batch_progress_label = Label(
+        batch_progress_frame,
+        text='Test.',
+        padx=2,
+    )
+    batch_progress_label.pack()
+
+    progress_bar = ttk.Progressbar(
+        batch_progress_frame,
+        orient='horizontal',
+        length=200,
+        mode='determinate',
+        )
+    progress_bar.pack()
+
+    progress_bar['maximum'] = 100000
+    while progress_bar['value'] > progress_bar['maximum']:
+        progress_bar['value'] += 1
+        batch_progress_frame.update_idletasks()
+
+    # Initialize Return Button
     close_button_frame = Frame(
         batch_window,
         padx=5,
@@ -394,24 +444,77 @@ def batch_orders_window() -> None:
         bd=5,
         relief=SUNKEN
     )
-    close_button_frame.grid(row=4, column=1, sticky=EW)
+    close_button_frame.grid(row=5, column=1, sticky=EW)
     
     close_button = Button(
         close_button_frame,
         text='Return to Main Menu',
         width=20,
-        height=1,
+        height=2,
         command=batch_window.destroy
         )
     close_button.pack()
 
     return
 
-def checked(value):
-    if value == True:
+def button_state_check(value: BooleanVar):
+    '''
+    Accepts a true/false and returns Normal/Disabled for button configurations.
+    '''
+    
+    if value is True:
         return NORMAL
     else:
         return DISABLED
+    
+def get_available_batch_count(material: StringVar, batch_length: int, batch_ot_var_status: BooleanVar) -> int:
+    '''
+    Accepts a material 
+    '''
+    batch_count = length_of_available_full_pdfs(material, batch_length, include_OT=batch_ot_var_status)[1]
+    return batch_count
+
+
+def reopen_batch_window(window):
+    
+    window.destroy()
+    batch_orders_window()
+
+
+def length_of_available_full_pdfs(material: str, batch_length: int, include_OT=True) -> int:
+    '''
+    Accepts a material type as a string, batch_length as an integer, and
+    include_OT as a boolean. Returns the length of all available PDFs for a
+    given papertype.
+    '''
+    sort_dir_path = caldera_path + '5 Sorted for Print/'
+
+    batch_length = batch_length * 12 # Change batch length from feet to inches
+
+    list_to_calculate = []
+
+    if include_OT is True:
+        ot_full_path = sort_dir_path + '1 - OT/' + material + '/Full/'
+        ot_full_list = glob(ot_full_path + '**/*.pdf', recursive=True)
+        list_to_calculate.extend(ot_full_list)
+    late_full_path = sort_dir_path + '2 - Late/' + material + '/Full/'
+    late_full_list = glob(late_full_path + '**/*.pdf', recursive=True)
+    list_to_calculate.extend(late_full_list)
+    today_full_path = sort_dir_path + '3 - Today/' + material + '/Full/'
+    today_full_list = glob(today_full_path + '**/*.pdf', recursive=True)
+    list_to_calculate.extend(today_full_list)
+    tomorrow_full_path = sort_dir_path + '4 - Tomorrow/' + material + '/Full/'
+    tomorrow_full_list = glob(tomorrow_full_path + '**/*.pdf', recursive=True)
+    list_to_calculate.extend(tomorrow_full_list)
+    future_full_path = sort_dir_path + '5 - Future/' + material + '/Full/'
+    future_full_list = glob(future_full_path + '**/*.pdf', recursive=True)
+    list_to_calculate.extend(future_full_list)
+
+    potential_length = calculate_full_length(sort_pdf_list(list_to_calculate))
+
+    potential_batch_count = floor(potential_length / batch_length)
+
+    return potential_length, potential_batch_count
 
 
 def display_pdf_counts(frame, material, column) -> int:
@@ -457,28 +560,6 @@ def batch_get_qty_counts(material, height) -> int:
         return count
 
 
-def test_stats_bar():
-    # Initialize Batch Window
-    test_window = Toplevel(root)
-    test_window.title('Build-A-Batch')
-
-    # Initialize Return Button
-    close_button = Button(
-        test_window,
-        text='Return to Main Menu',
-        width=20,
-        height=2,
-        command=test_window.destroy
-        )
-    close_button.grid(row=0, padx=10, pady=10)
-
-    status = Label(test_window, text='Test', relief=SUNKEN, bd=1)
-    status.grid(row=1, sticky='EW')
-
-    return
-
-
-
 main_menu_frame = LabelFrame(
     root,
     text='Main Menu',
@@ -516,7 +597,6 @@ button_drive_downloader = Button(
     text='Download from Drive',
     width=20,
     height=2,
-    command=test_stats_bar
     ).pack()
 
 button_dates_update = Button(
