@@ -203,7 +203,7 @@ def batch_orders_window() -> None:
                               padx=10,
                               pady=10,
                               relief=SUNKEN,
-                              bd=5)
+                              bd=8)
     panel_count_label.grid(column=0, row=0, rowspan=4)
 
     row_count = 1
@@ -231,14 +231,17 @@ def batch_orders_window() -> None:
     '''
     Initialize Options Frame and Widgets
     '''
+
+    # Options Frame Row Count
+    options_frame_row_count = 0
     # Options Frame
     options_frame = Frame(
         batch_window,
         padx=10,
         pady=10,
-        bd=5,
+        bd=8,
         relief=SUNKEN)
-    options_frame.grid(column=1, row=0, sticky=EW)
+    options_frame.grid(column=1, row=options_frame_row_count, sticky=EW)
 
     # Material Selection
     material_label = Label(options_frame,
@@ -249,41 +252,50 @@ def batch_orders_window() -> None:
     global batch_material_var
     batch_material_var = StringVar()
 
-    material_row_count = 0
     for material in paper_types:
         material_btn = Radiobutton(options_frame,
                                    variable=batch_material_var,
                                    value=material,
                                    text=material,
                                    command=lambda: update_batch_specs())
-        material_btn.grid(row=material_row_count, column=1, sticky=W)
-        material_row_count += 1
+        material_btn.grid(row=options_frame_row_count,
+                          column=1,
+                          sticky=W)
+        options_frame_row_count += 1
 
     batch_material_var.set(paper_types[0])
 
     # Include Samples Label and Checkbutton
-    sample_label = Label(options_frame,
-                         text='Include Samples?',
-                         justify=LEFT)
-    sample_label.grid(row=4, column=0, sticky=W)
+    batch_contents_label = Label(options_frame,
+                                 text='Batch Contents:',
+                                 justify=LEFT)
+    batch_contents_label.grid(row=options_frame_row_count,
+                              column=0,
+                              sticky=W)
 
-    global include_samples_var
-    include_samples_var = BooleanVar()
-    include_samples_var.set(True)
-    include_samples_checkbutton = Checkbutton(options_frame,
-                                              variable=include_samples_var,
-                                              onvalue=True,
-                                              offvalue=False,
-                                              justify=LEFT,
-                                              command=lambda: update_batch_specs())
-    include_samples_checkbutton.select()
-    include_samples_checkbutton.grid(row=4, column=1, sticky=W)
+    global batch_contents_var
+    batch_contents_var = IntVar()
+
+    for option in bv.batch_content_options:
+        content_checkbutton = Radiobutton(options_frame,
+                                          variable=batch_contents_var,
+                                          value=option[0],
+                                          text=option[1],
+                                          justify=LEFT,
+                                          command=lambda: update_batch_specs())
+        content_checkbutton.grid(row=options_frame_row_count,
+                                 column=1,
+                                 sticky=W)
+        options_frame_row_count += 1
+    batch_contents_var.set(bv.batch_content_options[0][0])
 
     # Order Trouble Label and Checkbutton
     order_trouble_label = Label(options_frame,
                                 text='Include Order Troubles?',
                                 justify=LEFT)
-    order_trouble_label.grid(row=5, column=0, sticky=W)
+    order_trouble_label.grid(row=options_frame_row_count,
+                             column=0,
+                             sticky=W)
 
     global batch_ot_var
     batch_ot_var = BooleanVar()
@@ -295,7 +307,10 @@ def batch_orders_window() -> None:
                                        justify=LEFT,
                                        command=lambda: update_batch_specs())
     batch_ot_checkbutton.select()
-    batch_ot_checkbutton.grid(row=5, column=1, sticky=W)
+    batch_ot_checkbutton.grid(row=options_frame_row_count,
+                              column=1,
+                              sticky=W)
+    options_frame_row_count += 1
 
     # Minimum Length Enforcement Label and Checkbutton
     '''Currently Disabled'''
@@ -303,7 +318,7 @@ def batch_orders_window() -> None:
         options_frame,
         text='Enforce minimum length?',
         justify=LEFT)
-    batch_minimum_label.grid(row=6, column=0, sticky=W)
+    batch_minimum_label.grid(row=options_frame_row_count, column=0, sticky=W)
 
     batch_minimum_var = BooleanVar().set(True)
     batch_minimum_checkbutton = Checkbutton(options_frame,
@@ -313,14 +328,17 @@ def batch_orders_window() -> None:
                                             justify=LEFT,
                                             state=DISABLED)
     batch_minimum_checkbutton.select()
-    batch_minimum_checkbutton.grid(row=6, column=1, sticky=W)
+    batch_minimum_checkbutton.grid(row=options_frame_row_count,
+                                   column=1,
+                                   sticky=W)
+    options_frame_row_count += 1
 
     # Length Label, Spinbox, and Reset Button
     length_label = Label(
         options_frame,
         text='Batch Length:',
         justify=LEFT)
-    length_label.grid(row=7, column=0, sticky=W)
+    length_label.grid(row=options_frame_row_count, column=0, sticky=W)
 
     global batch_length_var
     batch_length_var = IntVar()
@@ -332,18 +350,19 @@ def batch_orders_window() -> None:
                                    textvariable=batch_length_var,
                                    command=lambda: update_batch_specs())
     batch_length_var.set(150)
-    batch_length_spinbox.grid(row=7, column=1, sticky=W)
+    batch_length_spinbox.grid(row=options_frame_row_count, column=1, sticky=W)
 
     length_reset_btn = Button(options_frame,
                               text='Reset',
                               command=lambda: update_batch_specs(reset_length=True))
-    length_reset_btn.grid(row=7, column=2)
+    length_reset_btn.grid(row=options_frame_row_count, column=2)
+    options_frame_row_count += 1
 
     # Number of batches with these specifications
     available_batch_label = Label(options_frame,
                                   text='Available batches:',
                                   justify=LEFT)
-    available_batch_label.grid(row=8,
+    available_batch_label.grid(row=options_frame_row_count,
                                column=0,
                                sticky=W)
 
@@ -351,16 +370,18 @@ def batch_orders_window() -> None:
     batch_qty_label = Label(options_frame,
                             justify=LEFT,
                             text=str(get_available_batches(batch_material_var.get(),
-                                                   batch_length_var.get(),
-                                                   batch_ot_var.get())))
-    batch_qty_label.grid(row=8, column=1, sticky=W)
+                                                           batch_length_var.get(),
+                                                           batch_ot_var.get(),
+                                                           batch_contents_var.get())))
+    batch_qty_label.grid(row=options_frame_row_count, column=1, sticky=W)
+    options_frame_row_count += 1
 
     # Number of batches to make with current specifications
     batch_quantity_label = Label(options_frame,
                                  text='Batches to make:',
                                  justify=LEFT)
 
-    batch_quantity_label.grid(row=9,
+    batch_quantity_label.grid(row=options_frame_row_count,
                               column=0,
                               sticky=W)
 
@@ -373,21 +394,26 @@ def batch_orders_window() -> None:
                                      textvariable=batch_quantity_var,
                                      increment=1,
                                      to=get_available_batches(batch_material_var.get(),
-                                                      batch_length_var.get(),
-                                                      batch_ot_var.get()))
+                                                              batch_length_var.get(),
+                                                              batch_ot_var.get(),
+                                                              batch_contents_var.get()))
 
     batch_quantity_var.set(default_batch_quantity(batch_material_var.get(),
                                                   batch_length_var.get(),
-                                                  batch_ot_var.get()))
+                                                  batch_ot_var.get(),
+                                                  batch_contents_var.get()))
 
-    batch_quantity_spinbox.grid(row=9, column=1, sticky=W)
+    batch_quantity_spinbox.grid(row=options_frame_row_count,
+                                column=1,
+                                sticky=W)
+    options_frame_row_count += 1
 
     # Initialize Batch Button
     batch_btn_frame = Frame(
         batch_window,
         padx=5,
         pady=10,
-        bd=5,
+        bd=8,
         relief=SUNKEN)
     batch_btn_frame.grid(row=1, column=1, sticky=EW)
 
@@ -404,7 +430,7 @@ def batch_orders_window() -> None:
         batch_window,
         padx=5,
         pady=10,
-        bd=5,
+        bd=8,
         relief=SUNKEN)
     batch_progress_frame.grid(row=2, column=1, sticky=EW)
 
@@ -431,7 +457,7 @@ def batch_orders_window() -> None:
         batch_window,
         padx=5,
         pady=10,
-        bd=5,
+        bd=8,
         relief=SUNKEN)
     close_btn_frame.grid(row=4, column=0, columnspan=2, sticky=EW)
 
@@ -479,7 +505,8 @@ def reopen_window(window) -> None:
 
 def default_batch_quantity(material: str,
                            batch_length: int,
-                           include_OT: bool) -> int:
+                           include_OT: bool = True,
+                           batch_contents: int = 0) -> int:
     '''
     Accepts material as a string, batch_length as an int, and whether or not
     to include OTs as a bool.
@@ -487,7 +514,10 @@ def default_batch_quantity(material: str,
     than 3 batches are available, or to the number of batches available if
     less than 3 are available.
     '''
-    batch_count = get_available_batches(material, batch_length, include_OT)
+    batch_count = get_available_batches(material,
+                                        batch_length,
+                                        include_OT,
+                                        batch_contents)
     if batch_count >= 3:
         return 3
     else:
@@ -506,15 +536,17 @@ def update_batch_specs(reset_length=False) -> None:
     material = batch_material_var.get()
     batch_length = batch_length_var.get()
     include_OT = batch_ot_var.get()
-    include_samples = include_samples_var.get()
+    batch_contents = batch_contents_var.get()
 
     available_batches = get_available_batches(material,
-                                      batch_length,
-                                      include_OT)
+                                              batch_length,
+                                              include_OT,
+                                              batch_contents)
 
     default_batches_to_make = default_batch_quantity(material,
                                                      batch_length,
-                                                     include_OT)
+                                                     include_OT,
+                                                     batch_contents)
 
     batch_qty_label.config(text=str(available_batches))
     batch_quantity_spinbox.config(textvariable=default_batches_to_make,
@@ -523,85 +555,10 @@ def update_batch_specs(reset_length=False) -> None:
     return
 
 
-# def length_of_available_full_pdfs(material: str,
-#                                   batch_length: int,
-#                                   include_OT=True) -> int:
-#     '''
-#     Accepts a material type as a string, batch_length as an integer, and
-#     include_OT as a boolean. Returns the length of all available full PDFs
-#     for a given papertype.
-#     '''
-#     sort_dir_path = sortingDir
-
-#     batch_length = batch_length * 12  # Change batch length from feet to inches
-
-#     list_to_calculate = []
-
-#     if include_OT is True:
-#         ot_full_path = sort_dir_path + '1 - OT/' + material + '/Full/'
-#         ot_full_list = glob(ot_full_path + '**/*.pdf', recursive=True)
-#         list_to_calculate.extend(ot_full_list)
-#     late_full_path = sort_dir_path + '2 - Late/' + material + '/Full/'
-#     late_full_list = glob(late_full_path + '**/*.pdf', recursive=True)
-#     list_to_calculate.extend(late_full_list)
-#     today_full_path = sort_dir_path + '3 - Today/' + material + '/Full/'
-#     today_full_list = glob(today_full_path + '**/*.pdf', recursive=True)
-#     list_to_calculate.extend(today_full_list)
-#     tomorrow_full_path = sort_dir_path + '4 - Tomorrow/' + material + '/Full/'
-#     tomorrow_full_list = glob(tomorrow_full_path + '**/*.pdf', recursive=True)
-#     list_to_calculate.extend(tomorrow_full_list)
-#     future_full_path = sort_dir_path + '5 - Future/' + material + '/Full/'
-#     future_full_list = glob(future_full_path + '**/*.pdf', recursive=True)
-#     list_to_calculate.extend(future_full_list)
-
-#     potential_length = calculate_full_length(sort_pdf_list(list_to_calculate))
-
-#     potential_batch_count = floor(potential_length / batch_length)
-
-#     return potential_length, potential_batch_count
-
-
-# def length_of_available_samp_pdfs(material: str,
-#                                   batch_length:int,
-#                                   include_OT=True) -> int:
-#     '''
-#     Accepts a material type as a string, batch_length as an integer, and
-#     include_OT as a boolean. Returns the length of all available sample PDFs
-#     for a given paper type.
-#     '''
-#     sort_dir_path = sortingDir
-
-#     batch_length = batch_length * 12  # Change batch length from feet to inches
-
-#     list_to_calculate = []
-
-#     if include_OT is True:
-#         ot_samp_path = sort_dir_path + '1 - OT/' + material + '/Sample/'
-#         ot_samp_list = glob(ot_samp_path + '*-Samp-*.pdf')
-#         list_to_calculate.extend(ot_samp_list)
-#     late_samp_path = sort_dir_path + '2 - Late/' + material + '/Sample/'
-#     late_samp_list = glob(late_samp_path + '*-Samp-*.pdf')
-#     list_to_calculate.extend(late_samp_list)
-#     today_samp_path = sort_dir_path + '3 - Today/' + material + '/Sample/'
-#     today_samp_list = glob(today_samp_path + '*-Samp-*.pdf')
-#     list_to_calculate.extend(today_samp_list)
-#     tomorrow_samp_path = sort_dir_path + '4 - Tomorrow/' + material + '/Sample/'
-#     tomorrow_samp_list = glob(tomorrow_samp_path + '*-Samp-*.pdf')
-#     list_to_calculate.extend(tomorrow_samp_list)
-#     future_samp_path = sort_dir_path + '5 - Future/' + material + '/Sample/'
-#     future_samp_list = glob(future_samp_path + '*-Samp-*.pdf')
-#     list_to_calculate.extend(future_samp_list)
-
-#     sample_quantity = 0
-#     for sample in list_to_calculate:
-#         sample_quantity += get_pdf_data.quantity(sample)
-    
-#     sample_quantity = floor(sample_quantity / 2) + sample_quantity % 2
-#     print(sample_quantity)
-
-#     return sample_quantity
-
-def get_available_batches(material: str, batch_length: int, include_OT: bool=True) -> int:
+def get_available_batches(material: str,
+                          batch_length: int,
+                          include_OT: bool = True,
+                          batch_contents: int = 0) -> int:
     '''
     Accepts a material type and batch_length, and optionally accepts include_OT
     as a boolean. Calls get_length_of_pdfs to get a list of matching PDFs, then
@@ -609,13 +566,38 @@ def get_available_batches(material: str, batch_length: int, include_OT: bool=Tru
     '''
     potential_length = 0
     for height in bv.height_list:
-        potential_length += get_length_of_pdfs(material, height, include_OT)
+        if batch_contents == 1:
+            if height == 9:
+                pass
+            else:
+                potential_length += get_length_of_pdfs(material,
+                                                       height,
+                                                       include_OT,
+                                                       batch_contents)
+        elif batch_contents == 2:
+            if height != 9:
+                pass
+            else:
+                potential_length += get_length_of_pdfs(material,
+                                                       height,
+                                                       include_OT,
+                                                       batch_contents)
+        else:
+            potential_length += get_length_of_pdfs(material,
+                                                   height,
+                                                   include_OT,
+                                                   batch_contents)
 
     available_batches = floor(potential_length/(batch_length*12))
 
     return available_batches
 
-def get_length_of_pdfs(material: str, height: int, include_OT: bool=True) -> int:
+
+def get_length_of_pdfs(material: str,
+                       height: int,
+                       include_OT: bool = True,
+                       batch_contents:
+                       int = 0) -> int:
     '''
     Accepts a material type and panel height, and optionally accepts include_OT
     as a boolean. Calls get_list_of_pdfs to get a list of matching PDFs, then
@@ -625,7 +607,10 @@ def get_length_of_pdfs(material: str, height: int, include_OT: bool=True) -> int
     full_list_to_measure = []
     sample_quantity = 0
 
-    list_to_measure = get_list_of_pdfs(material, height, include_OT)
+    list_to_measure = get_list_of_pdfs(material,
+                                       height,
+                                       include_OT,
+                                       batch_contents)
     for print_pdf in list_to_measure:
         if '-Full-' in print_pdf:
             full_list_to_measure.append(print_pdf)
@@ -634,7 +619,7 @@ def get_length_of_pdfs(material: str, height: int, include_OT: bool=True) -> int
 
     full_length = calculate_full_length(sort_pdf_list(full_list_to_measure))
 
-    sample_length = floor(sample_quantity / 2) + sample_quantity % 2
+    sample_length = floor(((sample_quantity / 2) + sample_quantity % 2) * 9.5)
 
     potential_length: int = full_length + sample_length
 
@@ -667,24 +652,33 @@ def display_pdf_counts(frame, material, column) -> int:
     return column
 
 
-def get_qty_of_pdfs(material: str, height: float, include_OT = True) -> int:
+def get_qty_of_pdfs(material: str,
+                    height: float,
+                    include_OT: bool = True,
+                    batch_contents: int = 0) -> int:
     '''
     Accepts a material type and panel height, and optionally accepts include_OT
     as a boolean. Calls get_list_of_pdfs to get a list of matching PDFs, then
     returns a count of how many panels match the list.
     '''
 
-    list_to_count = get_list_of_pdfs(material, height, include_OT)
+    list_to_count = get_list_of_pdfs(material,
+                                     height,
+                                     include_OT,
+                                     batch_contents)
 
     count = 0
 
     for print_pdf in list_to_count:
         count += get_pdf_data.quantity(print_pdf)
-    
+
     return count
 
 
-def get_list_of_pdfs (material: str, height: float, include_OT = True) -> list:
+def get_list_of_pdfs(material: str,
+                     height: float,
+                     include_OT: bool = True,
+                     batch_contents: int = 0) -> list:
     '''
     Accepts a material type and panel height, and optionally accepts include_OT
     as a boolean. Then uses glob to find and return a list of matching PDFs.
@@ -699,22 +693,33 @@ def get_list_of_pdfs (material: str, height: float, include_OT = True) -> list:
     if include_OT is True:
         mtrl_path = (sortingDir + '*/' + material + '/',)
     else:
-        mtrl_path = (sortingDir + '2 - Late' + material + '/',
-                     sortingDir + '3 - Today' + material + '/',
-                     sortingDir + '4 - Tomorrow' + material + '/',
-                     sortingDir + '5 - Future' + material + '/',)
+        mtrl_path = (sortingDir + '2 - Late/' + material + '/',
+                     sortingDir + '3 - Today/' + material + '/',
+                     sortingDir + '4 - Tomorrow/' + material + '/',
+                     sortingDir + '5 - Future/' + material + '/',)
 
     # If looking for a sample
-    if height == 9:
-        for due_date in mtrl_path:
-            list_to_return.extend(glob(due_date + 'Sample/*.pdf'))
-    
+    if batch_contents == 1:
+        pass
+    else:
+        if height == 9:
+            for due_date in mtrl_path:
+                # This variable name doesn't mean anything. It's just to keep
+                # the character count under 80 characters.
+                short = due_date + 'Sample/*.pdf'
+                short = glob(short)
+                list_to_return.extend(short)
+
     # If looking for a full order
+    if batch_contents == 2:
+        pass
     else:
         for due_date in mtrl_path:
-            list_to_check = due_date + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf'
-            list_to_check = glob(due_date + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf')
-            list_to_return.extend(list_to_check)
+            # This variable name doesn't mean anything. It's just to keep
+            # the character count under 80 characters.
+            short = due_date + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf'
+            short = glob(due_date + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf')
+            list_to_return.extend(short)
 
     return list_to_return
 
