@@ -22,7 +22,9 @@ def batch_orders_window(root) -> None:
     # Initialize Batch Window
     batch_window = Toplevel(root)
     batch_window.title('Build-A-Batch')
-    batch_window.minsize(300, 350)
+    batch_window.geometry('728x591')
+    batch_window.minsize(728, 591)
+    batch_window.maxsize(728, 591)
 
     # Initialize frame that contains counts of different PDF heights
     panel_count_label = Frame(batch_window,
