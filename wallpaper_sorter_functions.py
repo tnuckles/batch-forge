@@ -1,16 +1,21 @@
 #!usr/bin/env python
 
+import glob
+import json
+from shutil import Error, copy, move
 import zipfile as zf
-import getPdfData as getPdf
-from batchCreate import tryToMovePDF
-import wallpaper_sorter_variables as gv
-from macos_tags import get_all as checkTags
 from datetime import date, timedelta
-from add_macos_tag import apply_tag as applyTag
-from downloadFromDrive import transferFilesFromDrive
-import shutil, json, glob, pikepdf
-from os import remove, rmdir, walk, listdir, rename
+from os import listdir, remove, rename, rmdir, walk
 from re import findall
+
+import pikepdf
+from macos_tags import get_all as checkTags
+
+import getPdfData as getPdf
+import wallpaper_sorter_variables as gv
+from add_macos_tag import apply_tag as applyTag
+from batchCreate import tryToMovePDF
+from downloadFromDrive import transferFilesFromDrive
 
 today = date.today()
 missingPdfList = []
@@ -58,7 +63,7 @@ def sortPdfsToSortedFolders(pathToCheck, verbose=False):
         # Checks if order is over the maximum length of a roll and moves it to Needs Attention
         if '(OTPUnknown)' in printPdf.split('/')[-1]:
             otPanelUknownList.append(getPdf.name(printPdf))
-            shutil.move(printPdf, gv.needsAttention + printPdf.split('/')[-1].split('.pdf')[0] + '_OT PANEL UNKNOWN.pdf')
+            move(printPdf, gv.needsAttention + printPdf.split('/')[-1].split('.pdf')[0] + '_OT PANEL UNKNOWN.pdf')
         if orderLength >= gv.dirLookupDict['MaterialLength'][gv.substrate[material]]:
             tryToMovePDF(printPdf, gv.needsAttention, friendlyName, verbose)
         else:
@@ -231,12 +236,12 @@ def renamePDF(old, new, JSONFilePath):
     itemName = new + "." + extension
     dirPath = JSONFilePath.split(JSONFilePath.split('/')[-1])[0]
     try:
-        shutil.copy(dirPath + old,dirPath + old + ' - temp.pdf')
+        copy(dirPath + old,dirPath + old + ' - temp.pdf')
         rename(dirPath + old, dirPath + itemName)
         remove(dirPath + old + ' - temp.pdf')
     except OSError:
         try:
-            shutil.move(JSONFilePath, gv.needsAttention)
+            move(JSONFilePath, gv.needsAttention)
         except:
             pass
         missingPdfList.append(itemName.split("-")[0])
@@ -306,7 +311,7 @@ def splitMultiPagePDFs(pathGlobToCheck):
             NumOfPages = len(pdf.pages)
         except:
             damagedPdfList.append(getPdf.name(file))
-            shutil.move(file, gv.needsAttention + file.split('/')[-1].split('.pdf')[0] + '_DAMAGED.pdf')
+            move(file, gv.needsAttention + file.split('/')[-1].split('.pdf')[0] + '_DAMAGED.pdf')
             pass
         try:
             NumOfPages = len(pdf.pages)
@@ -351,7 +356,7 @@ def checkForMultiQtySamplePdfs(pdfList):
             if i == sampToDuplicateFrom:
                 continue
             else:
-                shutil.copy(sampToDuplicateFrom, i)
+                copy(sampToDuplicateFrom, i)
         remove(sampToDuplicateFrom)
 
     return
@@ -382,3 +387,26 @@ def sortPackagesByOrderNumber(packageList): # takes a list of pathstopdfs and so
     packageList = sortedList
     sortedList = []
     return packageList
+
+def tryToMovePDF(printPDF, BatchDir, friendlyPdfName, verbose=False): # function that tries to move a PDF. If it can't move, it will try to copy then remove the original. If it can't do that, it will error out gracefully.
+    try:
+        move(printPDF, BatchDir)
+        if verbose == True:
+            print(f'| Moved: {friendlyPdfName}')
+        return
+    except Error:
+        if getPdf.size == 'Full':
+            copy(printPDF, BatchDir)
+        try:
+            remove(printPDF)
+            return
+        except OSError:
+            print('|> Moved PDF to batch folder, but couldn\'t remove the original file. Please remove the original file.')
+            print('|> PDF:', friendlyPdfName)
+            print('|> Path:', printPDF)
+            return
+    except FileNotFoundError:
+        print('|> Couldn\'t move PDF. Please check to make sure it exists.')
+        print('|> PDF:', friendlyPdfName)
+        print('|> Path:', printPDF)
+        return
