@@ -22,6 +22,12 @@ height_list = (9,
                146.25
                )
 
+batch_content_options = (
+    (0, 'Standard'),
+    (1, 'Full Panels Only'),
+    (2, 'Samples Only')
+)
+
 currentBatchDict = {
         'batchDetails':  {
             'ID': '',
