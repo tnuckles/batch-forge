@@ -2,11 +2,11 @@
 
 import glob
 import json
-from shutil import Error, copy, move
 import zipfile as zf
 from datetime import date, timedelta
 from os import listdir, remove, rename, rmdir, walk
 from re import findall
+from shutil import Error, copy, move
 
 import pikepdf
 from macos_tags import get_all as checkTags
@@ -14,8 +14,6 @@ from macos_tags import get_all as checkTags
 import getPdfData as getPdf
 import wallpaper_sorter_variables as gv
 from add_macos_tag import apply_tag as applyTag
-from batchCreate import tryToMovePDF
-from downloadFromDrive import transferFilesFromDrive
 
 today = date.today()
 missingPdfList = []
@@ -65,13 +63,13 @@ def sortPdfsToSortedFolders(pathToCheck, verbose=False):
             otPanelUknownList.append(getPdf.name(printPdf))
             move(printPdf, gv.needsAttention + printPdf.split('/')[-1].split('.pdf')[0] + '_OT PANEL UNKNOWN.pdf')
         if orderLength >= gv.dirLookupDict['MaterialLength'][gv.substrate[material]]:
-            tryToMovePDF(printPdf, gv.needsAttention, friendlyName, verbose)
+            try_to_move_pdf(printPdf, gv.needsAttention, friendlyName, verbose)
         else:
             if orderSize == 'Samp':
                 newFilePath = gv.sortingDir + orderDueDate + gv.dirLookupDict[material] + 'Sample/' + printPdf.split('/')[-1]
             else:
                 newFilePath = gv.sortingDir + orderDueDate + gv.dirLookupDict[material] + 'Full/' + gv.dirLookupDict['RepeatDict'][repeat] + gv.dirLookupDict[oddOrEven] + printPdf.split('/')[-1]
-        tryToMovePDF(printPdf, newFilePath, friendlyName)
+        try_to_move_pdf(printPdf, newFilePath, friendlyName)
     
     ordersInNeedsAttention = len(glob.glob(gv.needsAttention + '*.pdf'))
     if ordersInNeedsAttention > 0:
@@ -104,7 +102,7 @@ def unzipRenameSortPdfs():
 
     cleanupDownloadDir(gv.downloadDir)
 
-    transferFilesFromDrive()
+    transfer_files_from_drive()
 
 
 def parseJSON(openFile, JSONPath, fileToUnzipTo):
@@ -388,7 +386,7 @@ def sortPackagesByOrderNumber(packageList): # takes a list of pathstopdfs and so
     sortedList = []
     return packageList
 
-def tryToMovePDF(printPDF, BatchDir, friendlyPdfName, verbose=False): # function that tries to move a PDF. If it can't move, it will try to copy then remove the original. If it can't do that, it will error out gracefully.
+def try_to_move_pdf(printPDF, BatchDir, friendlyPdfName, verbose=False): # function that tries to move a PDF. If it can't move, it will try to copy then remove the original. If it can't do that, it will error out gracefully.
     try:
         move(printPDF, BatchDir)
         if verbose == True:
@@ -410,3 +408,28 @@ def tryToMovePDF(printPDF, BatchDir, friendlyPdfName, verbose=False): # function
         print('|> PDF:', friendlyPdfName)
         print('|> Path:', printPDF)
         return
+
+def transfer_files_from_drive():
+    # New name convention: 300013884-1-(2022-02-02)-Stnd-Wv-Samp-Rp 2-Qty 1-Watercolor Herringbone-L9.5-W25-H9
+
+    pdfDict = gv.dirLookupDict
+    list_to_transfer = glob(gv.driveLocation + '/*.pdf')
+    if len(list_to_transfer) < 1:
+        print('\n| No files to transfer from Google Drive.')
+        return
+    for print_pdf in list_to_transfer:
+        pdf_name = getPdf.name(print_pdf)
+        pdf_friendly_name = getPdf.friendlyName(pdf_name)
+        pdf_material = pdfDict[getPdf.material(pdf_name)]
+        pdf_order_size = pdfDict[getPdf.size(pdf_name)]
+        pdf_repeat = pdfDict['RepeatDict'][getPdf.repeat(pdf_name)]
+        even_or_odd = pdfDict[getPdf.oddOrEven(pdf_name)]
+        if pdf_order_size == 'Full':
+            dest_path = gv.sortingDir + '3 - Today/' + pdf_material + pdf_order_size + pdf_repeat + even_or_odd + pdf_name + '.pdf'
+        else:
+            dest_path = gv.sortingDir + '3 - Today/' + pdf_material + pdf_order_size + pdf_name + '.pdf'
+        print(f'\n| Trying to move {pdf_friendly_name}.')
+        try_to_move_pdf(print_pdf, dest_path, pdf_friendly_name, verbose=False)
+    print('\n| Finished transferring files from Google Drive.')
+
+    return

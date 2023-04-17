@@ -5,10 +5,11 @@ from math import floor
 from tkinter import *
 from tkinter import ttk
 
-import batch_builder_variables as bv
+import batch_variables as bv
 import getPdfData as get_pdf_data
 from batch_sorting import *
 from wallpaper_sorter_variables import paper_types, sortingDir
+from batch_logic import build_a_batch
 
 
 def batch_orders_window(root) -> None:
@@ -247,7 +248,7 @@ def batch_orders_window(root) -> None:
         text='Batch!',
         width=20,
         height=2,
-        command=lambda: reopen_window(batch_window))
+        command=lambda: build_a_batch(batch_window))
     batch_btn.pack()
 
     # Initialize Batch Progress Bar
@@ -272,10 +273,10 @@ def batch_orders_window(root) -> None:
         mode='determinate')
     progress_bar.pack()
 
-    progress_bar['maximum'] = 100000
-    while progress_bar['value'] > progress_bar['maximum']:
-        progress_bar['value'] += 1
-        batch_progress_frame.update_idletasks()
+    # progress_bar['maximum'] = 100000
+    # while progress_bar['value'] < progress_bar['maximum']:
+    #     progress_bar['value'] += 1
+    #     batch_progress_frame.update_idletasks()
 
     # Initialize Return Button
     close_btn_frame = Frame(
