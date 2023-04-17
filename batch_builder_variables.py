@@ -3,7 +3,7 @@
 import os
 from datetime import date
 from sqlitedict import SqliteDict
-from wallpaperSorterVariables import getHeader, getUtilityFiles
+from wallpaper_sorter_variables import getHeader, getUtilityFiles
 
 # Global Variables
 

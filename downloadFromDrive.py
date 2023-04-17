@@ -3,7 +3,7 @@
 from datetime import date
 import getPdfData as getPdf
 from glob import glob
-import wallpaperSorterVariables as gv
+import wallpaper_sorter_variables as gv
 from batchCreate import tryToMovePDF
 
 today = date.today()

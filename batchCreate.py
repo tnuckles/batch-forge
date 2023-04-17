@@ -6,7 +6,7 @@ from PyPDF2 import errors
 import getPdfData as getPdf
 import pdf_splitter as pdfSplitter
 from shutil import move, copy, Error
-import wallpaperSorterVariables as gv
+import wallpaper_sorter_variables as gv
 from add_macos_tag import apply_tag as applyTag
 from os import mkdir, remove, rmdir, walk, listdir
 

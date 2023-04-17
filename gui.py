@@ -8,15 +8,15 @@ from glob import glob
 from tkinter import *
 from tkinter import ttk
 
-from wallpaperSorterFunctions import (checkForMultiQtySamplePdfs,
-                                      cleanupDownloadDir, damagedPdfList,
-                                      missingPdfList, moveForDueDates,
-                                      otPanelUknownList, parseJSON,
-                                      reportListOfPdfs,
-                                      sortPackagesByOrderNumber,
-                                      sortPdfsToSortedFolders,
-                                      splitMultiPagePDFs, splitPdfList)
-from wallpaperSorterVariables import downloadDir, sortingDir
+from wallpaper_sorter_functions import (checkForMultiQtySamplePdfs,
+                                        cleanupDownloadDir, damagedPdfList,
+                                        missingPdfList, moveForDueDates,
+                                        otPanelUknownList, parseJSON,
+                                        reportListOfPdfs,
+                                        sortPackagesByOrderNumber,
+                                        sortPdfsToSortedFolders,
+                                        splitMultiPagePDFs, splitPdfList)
+from wallpaper_sorter_variables import downloadDir, sortingDir, paper_types
 from batch_sorting import *
 import getPdfData as get_pdf_data
 import batch_builder_variables as bv
@@ -24,10 +24,16 @@ from math import floor
 
 # Set Installation Directory. Don't actually know if I'll really need this.
 installation_dir = '/Users/Trevor/Documents/Scripts/batch-forge/'
+'''installation_dir = '/Users/caldera/Downloads/batch-forge-batching_gui/'''
 
 # Startup sorting copy tree just to make my life easier
 # while testing and developing.
 caldera_path = '/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/'
+'''caldera_path = '/Users/caldera/Desktop/gui_testing/'''
+downloadDir = caldera_path + '3 Downloaded/'
+sortingDir = caldera_path + '5 Sorted for Print/'
+
+
 try:
     shutil.rmtree(caldera_path + '3 Downloaded')
     shutil.copytree(caldera_path + '3 Downloaded Copy',
@@ -217,8 +223,7 @@ def batch_orders_window() -> None:
         row_count += 1
 
     column_count = 1
-    material_type = ('Smooth', 'Woven', 'Traditional')
-    for paper in material_type:
+    for paper in paper_types:
         column_count = display_pdf_counts(panel_count_label,
                                           paper,
                                           column_count)
@@ -244,9 +249,8 @@ def batch_orders_window() -> None:
     global batch_material_var
     batch_material_var = StringVar()
 
-    material_list = ('Smooth', 'Woven', 'Woven 2', 'Traditional')
     material_row_count = 0
-    for material in material_list:
+    for material in paper_types:
         material_btn = Radiobutton(options_frame,
                                    variable=batch_material_var,
                                    value=material,
@@ -255,7 +259,7 @@ def batch_orders_window() -> None:
         material_btn.grid(row=material_row_count, column=1, sticky=W)
         material_row_count += 1
 
-    batch_material_var.set('Smooth')
+    batch_material_var.set(paper_types[0])
 
     # Include Samples Label and Checkbutton
     sample_label = Label(options_frame,
@@ -263,6 +267,7 @@ def batch_orders_window() -> None:
                          justify=LEFT)
     sample_label.grid(row=4, column=0, sticky=W)
 
+    global include_samples_var
     include_samples_var = BooleanVar()
     include_samples_var.set(True)
     include_samples_checkbutton = Checkbutton(options_frame,
@@ -345,7 +350,7 @@ def batch_orders_window() -> None:
     global batch_qty_label
     batch_qty_label = Label(options_frame,
                             justify=LEFT,
-                            text=str(get_batch_cnt(batch_material_var.get(),
+                            text=str(get_available_batches(batch_material_var.get(),
                                                    batch_length_var.get(),
                                                    batch_ot_var.get())))
     batch_qty_label.grid(row=8, column=1, sticky=W)
@@ -367,7 +372,7 @@ def batch_orders_window() -> None:
                                      from_=0,
                                      textvariable=batch_quantity_var,
                                      increment=1,
-                                     to=get_batch_cnt(batch_material_var.get(),
+                                     to=get_available_batches(batch_material_var.get(),
                                                       batch_length_var.get(),
                                                       batch_ot_var.get()))
 
@@ -438,6 +443,18 @@ def batch_orders_window() -> None:
         command=batch_window.destroy)
     close_btn.pack()
 
+    # Show Directory Path
+    directory_frame = Frame(batch_window,
+                            padx=2,
+                            pady=2,
+                            bd=1,
+                            relief=SUNKEN)
+    directory_frame.grid(row=5, column=0, columnspan=2, sticky=EW)
+
+    directory_label = Label(directory_frame,
+                            text='Sorted Directory: ' + sortingDir)
+    directory_label.pack()
+
     return
 
 
@@ -449,20 +466,6 @@ def button_state_check(value: bool):
         return NORMAL
     else:
         return DISABLED
-
-
-def get_batch_cnt(material: StringVar,
-                  batch_length: int,
-                  ot_status: bool) -> int:
-    '''
-    Accepts a material, batch_length, and OT inclusiong as a bool. Calls
-    length_of_available_full_pdfs and returns a specific value as an int.
-    '''
-
-    batch_count = length_of_available_full_pdfs(material,
-                                                batch_length,
-                                                include_OT=ot_status)[1]
-    return batch_count
 
 
 def reopen_window(window) -> None:
@@ -484,7 +487,7 @@ def default_batch_quantity(material: str,
     than 3 batches are available, or to the number of batches available if
     less than 3 are available.
     '''
-    batch_count = get_batch_cnt(material, batch_length, include_OT)
+    batch_count = get_available_batches(material, batch_length, include_OT)
     if batch_count >= 3:
         return 3
     else:
@@ -503,8 +506,9 @@ def update_batch_specs(reset_length=False) -> None:
     material = batch_material_var.get()
     batch_length = batch_length_var.get()
     include_OT = batch_ot_var.get()
+    include_samples = include_samples_var.get()
 
-    available_batches = get_batch_cnt(material,
+    available_batches = get_available_batches(material,
                                       batch_length,
                                       include_OT)
 
@@ -519,42 +523,122 @@ def update_batch_specs(reset_length=False) -> None:
     return
 
 
-def length_of_available_full_pdfs(material: str,
-                                  batch_length: int,
-                                  include_OT=True) -> int:
+# def length_of_available_full_pdfs(material: str,
+#                                   batch_length: int,
+#                                   include_OT=True) -> int:
+#     '''
+#     Accepts a material type as a string, batch_length as an integer, and
+#     include_OT as a boolean. Returns the length of all available full PDFs
+#     for a given papertype.
+#     '''
+#     sort_dir_path = sortingDir
+
+#     batch_length = batch_length * 12  # Change batch length from feet to inches
+
+#     list_to_calculate = []
+
+#     if include_OT is True:
+#         ot_full_path = sort_dir_path + '1 - OT/' + material + '/Full/'
+#         ot_full_list = glob(ot_full_path + '**/*.pdf', recursive=True)
+#         list_to_calculate.extend(ot_full_list)
+#     late_full_path = sort_dir_path + '2 - Late/' + material + '/Full/'
+#     late_full_list = glob(late_full_path + '**/*.pdf', recursive=True)
+#     list_to_calculate.extend(late_full_list)
+#     today_full_path = sort_dir_path + '3 - Today/' + material + '/Full/'
+#     today_full_list = glob(today_full_path + '**/*.pdf', recursive=True)
+#     list_to_calculate.extend(today_full_list)
+#     tomorrow_full_path = sort_dir_path + '4 - Tomorrow/' + material + '/Full/'
+#     tomorrow_full_list = glob(tomorrow_full_path + '**/*.pdf', recursive=True)
+#     list_to_calculate.extend(tomorrow_full_list)
+#     future_full_path = sort_dir_path + '5 - Future/' + material + '/Full/'
+#     future_full_list = glob(future_full_path + '**/*.pdf', recursive=True)
+#     list_to_calculate.extend(future_full_list)
+
+#     potential_length = calculate_full_length(sort_pdf_list(list_to_calculate))
+
+#     potential_batch_count = floor(potential_length / batch_length)
+
+#     return potential_length, potential_batch_count
+
+
+# def length_of_available_samp_pdfs(material: str,
+#                                   batch_length:int,
+#                                   include_OT=True) -> int:
+#     '''
+#     Accepts a material type as a string, batch_length as an integer, and
+#     include_OT as a boolean. Returns the length of all available sample PDFs
+#     for a given paper type.
+#     '''
+#     sort_dir_path = sortingDir
+
+#     batch_length = batch_length * 12  # Change batch length from feet to inches
+
+#     list_to_calculate = []
+
+#     if include_OT is True:
+#         ot_samp_path = sort_dir_path + '1 - OT/' + material + '/Sample/'
+#         ot_samp_list = glob(ot_samp_path + '*-Samp-*.pdf')
+#         list_to_calculate.extend(ot_samp_list)
+#     late_samp_path = sort_dir_path + '2 - Late/' + material + '/Sample/'
+#     late_samp_list = glob(late_samp_path + '*-Samp-*.pdf')
+#     list_to_calculate.extend(late_samp_list)
+#     today_samp_path = sort_dir_path + '3 - Today/' + material + '/Sample/'
+#     today_samp_list = glob(today_samp_path + '*-Samp-*.pdf')
+#     list_to_calculate.extend(today_samp_list)
+#     tomorrow_samp_path = sort_dir_path + '4 - Tomorrow/' + material + '/Sample/'
+#     tomorrow_samp_list = glob(tomorrow_samp_path + '*-Samp-*.pdf')
+#     list_to_calculate.extend(tomorrow_samp_list)
+#     future_samp_path = sort_dir_path + '5 - Future/' + material + '/Sample/'
+#     future_samp_list = glob(future_samp_path + '*-Samp-*.pdf')
+#     list_to_calculate.extend(future_samp_list)
+
+#     sample_quantity = 0
+#     for sample in list_to_calculate:
+#         sample_quantity += get_pdf_data.quantity(sample)
+    
+#     sample_quantity = floor(sample_quantity / 2) + sample_quantity % 2
+#     print(sample_quantity)
+
+#     return sample_quantity
+
+def get_available_batches(material: str, batch_length: int, include_OT: bool=True) -> int:
     '''
-    Accepts a material type as a string, batch_length as an integer, and
-    include_OT as a boolean. Returns the length of all available PDFs for a
-    given papertype.
+    Accepts a material type and batch_length, and optionally accepts include_OT
+    as a boolean. Calls get_length_of_pdfs to get a list of matching PDFs, then
+    returns a count of available batches.
     '''
-    sort_dir_path = caldera_path + '5 Sorted for Print/'
+    potential_length = 0
+    for height in bv.height_list:
+        potential_length += get_length_of_pdfs(material, height, include_OT)
 
-    batch_length = batch_length * 12  # Change batch length from feet to inches
+    available_batches = floor(potential_length/(batch_length*12))
 
-    list_to_calculate = []
+    return available_batches
 
-    if include_OT is True:
-        ot_full_path = sort_dir_path + '1 - OT/' + material + '/Full/'
-        ot_full_list = glob(ot_full_path + '**/*.pdf', recursive=True)
-        list_to_calculate.extend(ot_full_list)
-    late_full_path = sort_dir_path + '2 - Late/' + material + '/Full/'
-    late_full_list = glob(late_full_path + '**/*.pdf', recursive=True)
-    list_to_calculate.extend(late_full_list)
-    today_full_path = sort_dir_path + '3 - Today/' + material + '/Full/'
-    today_full_list = glob(today_full_path + '**/*.pdf', recursive=True)
-    list_to_calculate.extend(today_full_list)
-    tomorrow_full_path = sort_dir_path + '4 - Tomorrow/' + material + '/Full/'
-    tomorrow_full_list = glob(tomorrow_full_path + '**/*.pdf', recursive=True)
-    list_to_calculate.extend(tomorrow_full_list)
-    future_full_path = sort_dir_path + '5 - Future/' + material + '/Full/'
-    future_full_list = glob(future_full_path + '**/*.pdf', recursive=True)
-    list_to_calculate.extend(future_full_list)
+def get_length_of_pdfs(material: str, height: int, include_OT: bool=True) -> int:
+    '''
+    Accepts a material type and panel height, and optionally accepts include_OT
+    as a boolean. Calls get_list_of_pdfs to get a list of matching PDFs, then
+    returns a length of matching PDFs.
+    '''
 
-    potential_length = calculate_full_length(sort_pdf_list(list_to_calculate))
+    full_list_to_measure = []
+    sample_quantity = 0
 
-    potential_batch_count = floor(potential_length / batch_length)
+    list_to_measure = get_list_of_pdfs(material, height, include_OT)
+    for print_pdf in list_to_measure:
+        if '-Full-' in print_pdf:
+            full_list_to_measure.append(print_pdf)
+        else:
+            sample_quantity += get_pdf_data.quantity(print_pdf)
 
-    return potential_length, potential_batch_count
+    full_length = calculate_full_length(sort_pdf_list(full_list_to_measure))
+
+    sample_length = floor(sample_quantity / 2) + sample_quantity % 2
+
+    potential_length: int = full_length + sample_length
+
+    return potential_length
 
 
 def display_pdf_counts(frame, material, column) -> int:
@@ -572,7 +656,7 @@ def display_pdf_counts(frame, material, column) -> int:
     for height in bv.height_list:
         height_count = Label(
             frame,
-            text=(str(batch_get_qty_counts(material, height))))
+            text=(str(get_qty_of_pdfs(material, height))))
         height_count.grid(column=column,
                           row=row_count,
                           padx=1,
@@ -583,29 +667,56 @@ def display_pdf_counts(frame, material, column) -> int:
     return column
 
 
-def batch_get_qty_counts(material, height) -> int:
+def get_qty_of_pdfs(material: str, height: float, include_OT = True) -> int:
     '''
-    Accepts a material type and panel height, then uses glob to find and return
-    an integer of the quantity.
+    Accepts a material type and panel height, and optionally accepts include_OT
+    as a boolean. Calls get_list_of_pdfs to get a list of matching PDFs, then
+    returns a count of how many panels match the list.
     '''
+
+    list_to_count = get_list_of_pdfs(material, height, include_OT)
+
+    count = 0
+
+    for print_pdf in list_to_count:
+        count += get_pdf_data.quantity(print_pdf)
+    
+    return count
+
+
+def get_list_of_pdfs (material: str, height: float, include_OT = True) -> list:
+    '''
+    Accepts a material type and panel height, and optionally accepts include_OT
+    as a boolean. Then uses glob to find and return a list of matching PDFs.
+    '''
+
+    list_to_return = []
 
     # Change height to ht for readability below
     ht = height
 
     # Specify first part of glob path
-    mtrl_path = sortingDir + '*/' + material + '/'
+    if include_OT is True:
+        mtrl_path = (sortingDir + '*/' + material + '/',)
+    else:
+        mtrl_path = (sortingDir + '2 - Late' + material + '/',
+                     sortingDir + '3 - Today' + material + '/',
+                     sortingDir + '4 - Tomorrow' + material + '/',
+                     sortingDir + '5 - Future' + material + '/',)
 
     # If looking for a sample
     if height == 9:
-        pdf_list = glob(mtrl_path + 'Sample/*.pdf')
-        count = len(pdf_list)
-        return count
+        for due_date in mtrl_path:
+            list_to_return.extend(glob(due_date + 'Sample/*.pdf'))
+    
+    # If looking for a full order
     else:
-        count = 0
-        pdf_list = glob(mtrl_path + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf')
-        for print_pdf in pdf_list:
-            count += get_pdf_data.quantity(print_pdf)
-        return count
+        for due_date in mtrl_path:
+            list_to_check = due_date + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf'
+            list_to_check = glob(due_date + 'Full/*/*/*-Full-*H' + str(ht) + '.pdf')
+            list_to_return.extend(list_to_check)
+
+    return list_to_return
 
 
 main_menu_frame = LabelFrame(root,

@@ -3,7 +3,7 @@
 import zipfile as zf
 import getPdfData as getPdf
 from batchCreate import tryToMovePDF
-import wallpaperSorterVariables as gv
+import wallpaper_sorter_variables as gv
 from macos_tags import get_all as checkTags
 from datetime import date, timedelta
 from add_macos_tag import apply_tag as applyTag

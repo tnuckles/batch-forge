@@ -5,7 +5,7 @@ from datetime import date
 from PyPDF2 import PdfFileReader, PdfFileWriter, errors
 
 import getPdfData as getPdf
-import wallpaperSorterVariables as gv
+import wallpaper_sorter_variables as gv
 today = date.today()
 
 def splitMultiPagePDFs(print_pdf):
