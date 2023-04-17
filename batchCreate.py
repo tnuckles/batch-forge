@@ -2,13 +2,16 @@
 
 import glob
 from math import floor
+from os import listdir, mkdir, remove, rmdir, walk
+from shutil import Error, copy, move
+
 from PyPDF2 import errors
+
 import getPdfData as getPdf
 import pdf_splitter as pdfSplitter
-from shutil import move, copy, Error
 import wallpaper_sorter_variables as gv
 from add_macos_tag import apply_tag as applyTag
-from os import mkdir, remove, rmdir, walk, listdir
+
 
 def getPdfGlob(dueDate, material, fullOrSamp): # Takes a "due date" (OT, Late, Today, Tomorrow, Future), a material type, and full or sample, then returns a glob list 
     dueDateLookup = {

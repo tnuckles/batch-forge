@@ -1,17 +1,14 @@
 # /Users/Trevor/Documents/Scripts/batch-forge python
 
-import json
-import shutil
-import zipfile as zf
 from glob import glob
+from math import floor
 from tkinter import *
 from tkinter import ttk
 
-from wallpaper_sorter_variables import sortingDir, paper_types
-from batch_sorting import *
-import getPdfData as get_pdf_data
 import batch_builder_variables as bv
-from math import floor
+import getPdfData as get_pdf_data
+from batch_sorting import *
+from wallpaper_sorter_variables import paper_types, sortingDir
 
 
 def batch_orders_window(root) -> None:
