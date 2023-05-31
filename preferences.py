@@ -5,33 +5,28 @@ from datetime import date
 
 TODAY = date.today()
 
+
+
 # Location for Caldera's Folders
 if os.path.expanduser("~").split("/")[-1] == "Trevor":
-    CALDERA_DIR = "/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/"
+    CALDERA_HOME = "/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/"
     DRIVE_DIR = "/Volumes/GoogleDrive/Shared drives/# Production/#LvD Test Fulfillment"
 else:
-    CALDERA_DIR = "/opt/caldera/var/public/"
+    CALDERA_HOME = "/opt/caldera/var/public/"
     DRIVE_DIR = "/Users/caldera/Library/CloudStorage/GoogleDrive-matthew@lovevsdesign.com/Shared Drives/# Production/#LvD Fulfillment"
 
-"""
-Removing those pesky headers
-"""
-# batch_headers = {
-#     'ot': CALDERA_DIR + 'z_Storage/assets/headers/999999999-headerOt.pdf',
-#     'late': CALDERA_DIR + 'z_Storage/assets/headers/999999999-headerLate.pdf',
-#     'today': CALDERA_DIR + 'z_Storage/assets/headers/999999999-headerToday.pdf',
-#     'tomorrow': CALDERA_DIR + 'z_Storage/assets/headers/999999999-headerTomorrow.pdf',
-#     'future': CALDERA_DIR + 'z_Storage/assets/headers/999999999-headerFuture.pdf',
-# }
+CALDERA_DIRS_DICT = {
+    'HOTFOLDERS_DIR': CALDERA_HOME + "1 Hotfolders/",
+    'BATCH_FOLDERS_DIR': CALDERA_HOME + "2 Batch Folders/",
+    'DOWNLOAD_DIR': CALDERA_HOME + "3 Downloaded/",
+    'NEEDS_ATTENTION_DIR': CALDERA_HOME + "4 Needs Attention/",
+    'SORTING_DIR': CALDERA_HOME + "5 Sorted for Print/",
+    'PAST_ORDERS_DIR': CALDERA_HOME + "# Past Orders/",
+}
 
-HOTFOLDERS_DIR = CALDERA_DIR + "1 Hotfolders/"
-BATCH_FOLDERS_DIR = CALDERA_DIR + "2 Batch Folders/"
-DOWNLOAD_DIR = CALDERA_DIR + "3 Downloaded/"
-NEEDS_ATTENTION_DIR = CALDERA_DIR + "4 Needs Attention/"
-SORTING_DIR = CALDERA_DIR + "5 Sorted for Print/"
-PAST_ORDERS_DIR = CALDERA_DIR + "# Past Orders/"
 
-full_length_split_percentage = 0.85  # 85%. This is the percentage that batching will try to fill with full, then save the rest for samples.
+
+FULL_SAMP_SPLIT_PERCENTAGE = 0.85  # 85%. This is the percentage that batching will try to fill with full, then save the rest for samples.
 
 PAPER_TYPES = ("Smooth", "Woven", "Woven 2", "Traditional")
 
@@ -95,7 +90,7 @@ SHIP_METHODS = {
     "International Rush": "InRush",
 }
 
-pdfs_to_rename = {}
+PDFS_TO_RENAME = {}
 
 COUNT_OF_REF_PDFS = (
     {}  # Running count of PDFs that are referenced during sample creating. If a PDF is referenced more than once, the order and PDF are printed to alert fulfillment of dual-type samples
