@@ -1,0 +1,20 @@
+Known issues. Will move this to github later; just needed a scratchpad.
+
+1.  Batching: Pressing the reset button doesn't properly reset the variable for
+    batches to make, but does reset the label.
+
+    Workaround: return to main menu, then re-launch batching.
+
+2.  Pressing the done button doesn't work as intended. Not properly reseting 
+    batching variable, similar to 1. Likely both are related to
+    "update_batch_specs" not working correctly.
+
+    Workaround: return to main menu, then re-launch batching.
+
+
+
+-------
+Pre-Start Checks
+
+1.  Caldera Importer needs to check for proper batch folder structure
+
