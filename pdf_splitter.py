@@ -9,9 +9,14 @@ import pikepdf
 from PyPDF2 import PdfFileReader, PdfFileWriter, errors
 
 import get_pdf_data as get_pdf
-import wallpaper_sorter_variables as gv
+from batch_forge_config import GENERAL_VARS as GV
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
 
-today = date.today()
+TODAY = date.today()
+
+DOWNLOAD_DIR = GVH["Caldera Dirs"]["Downloads"]
+NEEDS_ATTENTION_DIR = GVH["Caldera Dirs"]["Attention"]
+PAST_DIR = GVH["Caldera Dirs"]["Past Batches"]
 
 
 def splitMultiPagePDFs(print_pdf):
@@ -51,19 +56,19 @@ def splitMultiPagePDFs(print_pdf):
 
 
 def checkRepeatSize():
-    for printPDF in glob.iglob(gv.DOWNLOAD_DIR + "*.pdf"):
+    for printPDF in glob.iglob(DOWNLOAD_DIR + "*.pdf"):
         printPDFFull = printPDF.split("/")[-1].split("-")[7]
         printPDFrepeat = int(printPDF.split("/")[-1].split("-")[8].split("Rp ")[1])
         if printPDFFull == "Full":
             if printPDFrepeat % 2 == 1:
                 try:
-                    shutil.move(printPDF, gv.NEEDS_ATTENTION_DIR)
+                    shutil.move(printPDF, NEEDS_ATTENTION_DIR)
                     print(
                         "| File has an odd repeat and has been moved to 4 Needs Attention"
                     )
                     print("| File:", printPDF.split("/")[-1])
                 except shutil.Error:
-                    shutil.copy(printPDF, gv.NEEDS_ATTENTION_DIR)
+                    shutil.copy(printPDF, NEEDS_ATTENTION_DIR)
                     try:
                         os.remove(printPDF)
                     except OSError:
@@ -92,13 +97,13 @@ def checkRepeatDuringBatching(pdf, batch_dir):
     if printPDFFull == "Full":
         if printPDFrepeat % 2 == 1:
             try:
-                shutil.move(pdf, gv.NEEDS_ATTENTION_DIR)
+                shutil.move(pdf, NEEDS_ATTENTION_DIR)
                 print(
                     "| File has an odd repeat and has been moved to 4 Needs Attention"
                 )
                 print("| File:", pdf.split("/")[-1])
             except shutil.Error:
-                shutil.copy(pdf, gv.NEEDS_ATTENTION_DIR)
+                shutil.copy(pdf, NEEDS_ATTENTION_DIR)
                 try:
                     os.remove(pdf)
                 except OSError:
@@ -146,7 +151,7 @@ def determine_panel_quantity(quantity, repeat, OT=False):
 
 
 def crop_multipanel_pdfs(print_pdf_to_split, batch_dir):
-    storage_dir = gv.CALDERA_DIR + "# Past Orders/Original Files/"
+    storage_dir = PAST_DIR + "Original Files/"
     shutil.copy(print_pdf_to_split, storage_dir)
 
     order_dict = {

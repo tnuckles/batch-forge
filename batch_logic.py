@@ -4,25 +4,30 @@ from glob import glob
 from math import floor
 from os import listdir, mkdir, rmdir, walk
 from shutil import copy
-from PyPDF2 import errors
 from tkinter import *
-from tkinter import ttk
 
 import macos_tags
-import pdf_splitter
+from PyPDF2 import errors
 
-import batch_sorting as bs
-import batch_variables as bv
+import batch_sorting as BS
 import get_pdf_data as get_pdf
+import pdf_splitter
+from batch_forge_config import BATCHING_VARS as BV
+from batch_forge_config import BATCHING_VARS_HIDDEN as BVH
+from batch_forge_config import GENERAL_VARS as GV
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
+from batch_forge_config import (
+    reset_available_pdfs,
+    reset_batch_dict,
+    get_batch_id
+    )
+from datetime import date
 from wallpaper_sorter_functions import try_to_move_pdf
-from wallpaper_sorter_variables import (
-    BATCH_FOLDERS_DIR,
-    DIR_LOOKUP,
-    SORTING_DIR,
-    SUBSTRATE,
-    TODAY,
-)
 
+TODAY = date.today()
+
+BATCH_FOLDERS_DIR = GVH["Caldera Dirs"]["Batches"]
+SORTING_DIR = GVH["Caldera Dirs"]["Sorting"]
 
 def build_a_batch(
     batch_progress_frame,
@@ -73,7 +78,7 @@ def build_a_batch(
     # batch_progress_label.pack()
 
     # Changes batch_length to inches
-    batch_length = (batch_length * 12) - bv.PRINTER_WASTE_LENGTH
+    batch_length = (batch_length * 12) - GV["Printer Waste"]
 
     # Sets progress bar maximum
     batch_progress_bar["maximum"] = batches_to_make
@@ -83,9 +88,9 @@ def build_a_batch(
         batch_num_label = batch_num + 1
         # Resets the batch dict and available PDFs dict
         global batch_dict
-        batch_dict = bv.reset_batch_dict()
+        batch_dict = reset_batch_dict()
         global available_pdfs
-        available_pdfs = bv.reset_available_pdfs()
+        available_pdfs = reset_available_pdfs()
 
         # Sets details about the batch
         batch_details = batch_dict["batch_details"]
@@ -94,11 +99,11 @@ def build_a_batch(
         batch_details["include_OTs"] = include_OTs
         batch_details["material"] = material
         batch_details["contents"] = contents
-        batch_details["ID"] = bv.get_batch_id()
+        batch_details["ID"] = get_batch_id()
 
         # Variables of batch_dict for easy reference
         material = batch_details["material"]
-        min_batch_length = batch_details["material_length"] * bv.MIN_LNGTH
+        min_batch_length = batch_details["material_length"] * BV["Minimum Length"]
 
         # Updates status label fo finding PDFs
         batch_progress_label.config(
@@ -151,10 +156,8 @@ def create_batch_folders(batch_dict: dict) -> None:
     batch_priority = batch_dict["batch_details"]["priority"]
     batch_material = batch_dict["batch_details"]["material"]
     batch_length = batch_dict["batch_details"]["length"]
-    ends_with = str(batch_length)[-1:-3]
-    if (ends_with == ".0") or (ends_with == ".5"):
+    if (str(batch_length).endswith(".0")) or (str(batch_length).endswith(".5")):
         batch_length = str(batch_length) + "0"
-    material_length = batch_dict["batch_details"]["material_length"]
     tag = "Hotfolder"
 
     # New batch directory name and path assembly
@@ -208,7 +211,7 @@ def create_batch_folders(batch_dict: dict) -> None:
             for print_pdf in batch_list:
                 if "BlankPdf" in print_pdf:
                     pdf_height = str(get_pdf.height(print_pdf))
-                    blank_panel = bv.blank_panels[pdf_height]
+                    blank_panel = BVH["Blank Panels"][pdf_height]
                     batch_dir = priority_dict[priority_counter]
                     new_name = batch_dir + "/" + print_pdf.split("/")[-1]
                     copy(blank_panel, new_name)
@@ -295,7 +298,8 @@ def create_batch(batch_dict: dict, available_pdfs: dict) -> dict:
     cur_length = batch_dict["batch_details"]["length"]
     mat_length = batch_dict["batch_details"]["material_length"]
 
-    for priority in bv.PRIORITY_OPTIONS:
+    for priority in BV["Priorities"]:
+        priority = BV["Priorities"][priority]
         batch_dict = batch_loop_controller(priority, "full", batch_dict, available_pdfs)
         if cur_length < (mat_length - 10):
             batch_dict = batch_loop_controller(
@@ -376,7 +380,7 @@ def batch_loop_samp(
     two because we can fit two samples side by side.
     """
 
-    samples_allowed = (floor((max_length - current_length) / bv.SAMPLE_SIZE)) * 2
+    samples_allowed = (floor((max_length - current_length) / BV["Sample Size"])) * 2
     samples_added = 0
 
     # Main sample loop
@@ -395,12 +399,12 @@ def batch_loop_samp(
     # and divide it by two, rounded down, for the number of full rows. Then
     # take the number of samples mod 2 to see if there's a single sample
     # row. Add the two together, then multiply by 9.5 for the length.
-    length_to_add = (floor(samples_added / 2) + (samples_added % 2)) * bv.SAMPLE_SIZE
+    length_to_add = (floor(samples_added / 2) + (samples_added % 2)) * BV["Sample Size"]
 
     if len(batch_list) % 2 == 1:
         temp_height = get_pdf.height(batch_list[-1])
         temp_num = get_pdf.order_number(batch_list[-1])
-        temp_lookup = bv.blank_panels[str(temp_height)]
+        temp_lookup = BVH["Blank Panels"][str(temp_height)]
         temp_name = temp_lookup.replace("999999999", temp_num)
         batch_list.append(temp_name)
 
@@ -439,6 +443,16 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
         pdf_odd_or_even = get_pdf.odd_or_even(print_pdf)
         pdf_height = get_pdf.height(print_pdf)
 
+        if find_odd == True:
+            if pdf_height != odd_match_height:
+                find_odd = False
+                temp_height = get_pdf.height(batch_list[-1])
+                temp_num = get_pdf.order_number(batch_list[-1])
+                temp_lookup = BVH["Blank Panels"][str(temp_height)]
+                temp_name = temp_lookup.replace("999999999", temp_num)
+                batch_list.append(temp_name)
+
+
         # Program will attempt to match odd-quantity orders next to
         # similar odd-quantity orders. This allows material to be saved
         # as orders are printed next to one another.
@@ -446,7 +460,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
             # If the current item in the iteration will put the batch over
             # max length, skip it.
             potential_length = current_section_length + current_length
-            if potential_length + pdf_length > max_length * 0.93:
+            if potential_length + pdf_length > max_length * GV["Full Samp Split"]:
                 continue
             else:
                 # Add the length of the item to the length of the batch
@@ -469,7 +483,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
                     # length greater than the max length, skip it
                     potential_length = current_section_length + current_length
                     odd_adjustment = pdf_length - (pdf_height + 0.5)
-                    if potential_length + odd_adjustment > max_length * 0.93:
+                    if potential_length + odd_adjustment > max_length * GV["Full Samp Split"]:
                         continue
                     else:
                         # If the last item and current item match heights, are
@@ -486,7 +500,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
                     # If the current item in the iteration will
                     # put the batch over the max length, skip it.
                     potential_length = current_section_length + current_length
-                    if potential_length + pdf_length > max_length * 0.93:
+                    if potential_length + pdf_length > max_length * GV["Full Samp Split"]:
                         continue
                     else:
                         # If the next item in the list doesn't match the
@@ -500,7 +514,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
                             # based on the last item in the batch list
                             temp_height = get_pdf.height(batch_list[-1])
                             temp_num = get_pdf.order_number(batch_list[-1])
-                            temp_lookup = bv.blank_panels[str(temp_height)]
+                            temp_lookup = BVH["Blank Panels"][str(temp_height)]
                             temp_name = temp_lookup.replace("999999999", temp_num)
                             batch_list.append(temp_name)
                         # Because we feed the loop a sorted list, the very
@@ -511,6 +525,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
                         current_section_length += pdf_length
                         batch_list.append(print_pdf)
                         odd_match_height = pdf_height
+                        find_odd = False
     """
     Commenting this out because I believe it's adding an erroneous
     extra panel, making batches a single panel too long.
@@ -539,7 +554,8 @@ def check_min_length(material: str, min_batch_length: int) -> None:
     if the available PDFs are enough for a minimum batch length.
     """
     batch_length = 0
-    for priority in bv.PRIORITY_OPTIONS:
+    for priority in BV["Priorities"]:
+        priority = BV["Priorities"][priority]
         full_length = available_pdfs[priority]["full"]["batch_length"]
         samp_length = available_pdfs[priority]["sample"]["batch_length"]
         batch_length += full_length + samp_length
@@ -558,8 +574,8 @@ def fill_available_pdfs_dict(material: str, contents: int, include_OTs: bool) ->
     the available PDFs dict.
     """
 
-    for priority in bv.PRIORITY_OPTIONS:
-        avlbl_short = available_pdfs[priority]
+    for priority in BV["Priorities"]:
+        avlbl_short = available_pdfs[BV["Priorities"][priority]]
         if priority == "OT":
             if include_OTs is False:
                 continue
@@ -570,9 +586,9 @@ def fill_available_pdfs_dict(material: str, contents: int, include_OTs: bool) ->
             avlbl_size = avlbl_short["full"]
             # Retrieves a sorted list of full PDFs
             glob_lst = get_pdf_glob(priority, material, "full")
-            avlbl_size["batch_list"] = bs.sort_pdf_list(glob_lst)
+            avlbl_size["batch_list"] = BS.sort_pdf_list(glob_lst)
             # Calculates a length for the sorted list of full PDFs
-            avlbl_size["batch_length"] = bs.calculate_full_length(
+            avlbl_size["batch_length"] = BS.calculate_full_length(
                 avlbl_size["batch_list"]
             )
         if contents == 1:
@@ -582,9 +598,9 @@ def fill_available_pdfs_dict(material: str, contents: int, include_OTs: bool) ->
             avlbl_size = avlbl_short["sample"]
             # Retrieves a sorted list of sample PDFs
             glob_lst = get_pdf_glob(priority, material, "sample")
-            avlbl_size["batch_list"] = bs.sort_pdfs_by_order_number(glob_lst)
+            avlbl_size["batch_list"] = BS.sort_pdfs_by_order_number(glob_lst)
             # Calculates a length for the sorted list of sample PDFs
-            avlbl_size["batch_length"] = bs.calculate_sample(avlbl_size["batch_list"])
+            avlbl_size["batch_length"] = BS.calculate_sample(avlbl_size["batch_list"])
 
 
 def get_pdf_glob(due_date: str, material: str, full_or_samp: str) -> list:
@@ -593,14 +609,14 @@ def get_pdf_glob(due_date: str, material: str, full_or_samp: str) -> list:
     as a string, and full or sample as a string, then returns a glob list.
     """
     due_date_lookup = {
-        "OT": "1 - OT/",
-        "Late": "2 - Late/",
-        "Today": "3 - Today/",
-        "Tomorrow": "4 - Tomorrow/",
-        "Future": "5 - Future/",
+        1: "1 - OT/",
+        2: "2 - Late/",
+        3: "3 - Today/",
+        4: "4 - Tomorrow/",
+        5: "5 - Future/",
         "all": "*/",
     }
-    material = DIR_LOOKUP[material]
+    material = GVH["Lookups"]["Paper Dirs"][material]
     if full_or_samp.lower() == "full":
         full_or_samp = "Full/**/*.pdf"
     elif full_or_samp.lower() == "sample":
@@ -656,18 +672,18 @@ def add_color_guides(batch_dict: dict) -> dict:
     roll_stickers = batch_details["roll_stickers"]
 
     if batch_length <= material_length - 8:
-        utlty_qty = floor((material_length - batch_length) / bv.SAMPLE_SIZE)
+        utlty_qty = floor((material_length - batch_length) / BV["Sample Size"])
         if utlty_qty == 0:
             utlty_qty = 1
             color_guides["unique_filename"] = utlty_name_assy(
                 "color_guides", batch_material, utlty_qty
             )
-            batch_length += utlty_qty * bv.SAMPLE_SIZE
+            batch_length += utlty_qty * BV["Sample Size"]
         elif utlty_qty <= 11:
             color_guides["unique_filename"] = utlty_name_assy(
                 "color_guides", batch_material, utlty_qty
             )
-            batch_length += utlty_qty * bv.SAMPLE_SIZE
+            batch_length += utlty_qty * BV["Sample Size"]
         elif utlty_qty > 11:
             sticker_qty = 2
             utlty_qty = utlty_qty - sticker_qty
@@ -677,7 +693,7 @@ def add_color_guides(batch_dict: dict) -> dict:
             roll_stickers["unique_filename"] = utlty_name_assy(
                 "roll_stickers", batch_material, sticker_qty
             )
-            batch_length += utlty_qty * bv.SAMPLE_SIZE
+            batch_length += utlty_qty * BV["Sample Size"]
             batch_length += 19
 
     batch_details["length"] = batch_length
@@ -700,16 +716,16 @@ def utlty_name_assy(utility_type: str, material: str, quantity: int) -> str:
     section_1 = "/6 - Utility/999999999-1-("
     due_date = str(TODAY)
     section_2 = ")-Stnd-"
-    material = SUBSTRATE[material]
-    section_3 = "-Samp-Rp 2-Qty"
+    material = GV["Paper Types"][material]["Short Name"]
+    section_3 = "-Samp-Rp 2-Qty "
     quantity = str(quantity * 2)
     if utility_type == "color_guides":
         section_4 = "-Color Chart-L"
-        length = str(int(quantity) * bv.SAMPLE_SIZE)
+        length = str((int(quantity) * BV["Sample Size"])/2)
         section_5 = "-W25-H9.pdf"
     elif utility_type == "roll_stickers":
         section_4 = "-Roll Stickers-"
-        length = "L19"
+        length = str((int(quantity) * BV["Sample Size"])/2)
         section_5 = "-W25-H9.pdf"
 
     unique_name_1 = section_1 + due_date + section_2 + material + section_3
@@ -811,6 +827,6 @@ def reset_batch_dicts():
 
     Returns nothing.
     """
-    available_pdfs = bv.reset_available_pdfs()
-    batch_dict = bv.reset_batch_dict()
+    available_pdfs = reset_available_pdfs()
+    batch_dict = reset_batch_dict()
     return

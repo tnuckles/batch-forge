@@ -127,6 +127,8 @@ def sort_by_height(pdf_dict: dict) -> dict:
     for list_to_sort in pdf_dict:
         for print_pdf in pdf_dict[list_to_sort]:
             pdf_height = str(get_pdf.height(print_pdf))
+            if pdf_height == "9.0":
+                print()
             sorted_dict[pdf_height].append(print_pdf)
         pdf_dict[list_to_sort] = sorted_dict
         sorted_dict = {
