@@ -12,8 +12,15 @@ import pikepdf
 from macos_tags import get_all as checkTags
 
 import get_pdf_data as get_pdf
-import wallpaper_sorter_variables as gv
+from batch_forge_config import GENERAL_VARS as GV
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
+from batch_forge_config import DRIVE_DIR, global_batch_counter
 from add_macos_tag import apply_tag as applyTag
+
+BATCH_FOLDERS_DIR = GVH["Caldera Dirs"]["Batches"]
+SORTING_DIR = GVH["Caldera Dirs"]["Sorting"]
+NEEDS_ATTENTION_DIR = GVH["Caldera Dirs"]["Attention"]
+DOWNLOAD_DIR  = GVH["Caldera Dirs"]["Downloads"]
 
 today = date.today()
 missing_pdf_list = []
@@ -22,14 +29,15 @@ split_pdf_list = []
 ot_panel_unknown_list = []
 
 
+
 def startupChecks():
     checkBatchCounter()
-    moveForDueDates(glob.glob(gv.SORTING_DIR + "**/*.pdf", recursive=True))
+    moveForDueDates(glob.glob(SORTING_DIR + "**/*.pdf", recursive=True))
 
 
 def checkBatchCounter():
-    if gv.globalBatchCounter["batchCounter"] > 9000:
-        gv.globalBatchCounter["batchCounter"] = 1
+    if global_batch_counter["batchCounter"] > 9000:
+        global_batch_counter["batchCounter"] = 1
 
 
 def dueDateLookup(printPdf):
@@ -49,11 +57,11 @@ def dueDateLookup(printPdf):
 
 def moveForDueDates(pathToCheck):
     print("\n| Updating Orders. Today's date:", today)
-    sortPdfsToSortedFolders(pathToCheck, True)
+    sortPdfsToSortedFolders(pathToCheck)
     print("| Done updating orders based on Due Dates.")
 
 
-def sortPdfsToSortedFolders(pathToCheck, verbose=False):
+def sortPdfsToSortedFolders(pathToCheck):
     for printPdf in pathToCheck:
         friendlyName = get_pdf.friendly_name(printPdf)
         orderDueDate = dueDateLookup(printPdf)
@@ -68,34 +76,34 @@ def sortPdfsToSortedFolders(pathToCheck, verbose=False):
             ot_panel_unknown_list.append(get_pdf.name(printPdf))
             move(
                 printPdf,
-                gv.NEEDS_ATTENTION_DIR
+                NEEDS_ATTENTION_DIR
                 + printPdf.split("/")[-1].split(".pdf")[0]
                 + "_OT PANEL UNKNOWN.pdf",
             )
-        if orderLength >= gv.DIR_LOOKUP["MaterialLength"][gv.SUBSTRATE[material]]:
-            try_to_move_pdf(printPdf, gv.NEEDS_ATTENTION_DIR, friendlyName)
+        if orderLength >= GVH["Lookups"]["Material Length"][material]:
+            try_to_move_pdf(printPdf, NEEDS_ATTENTION_DIR, friendlyName)
         else:
             if orderSize == "Samp":
                 newFilePath = (
-                    gv.SORTING_DIR
+                    SORTING_DIR
                     + orderDueDate
-                    + gv.DIR_LOOKUP[material]
+                    + GVH["Lookups"]["Paper Dirs"][material]
                     + "Sample/"
                     + printPdf.split("/")[-1]
                 )
             else:
                 newFilePath = (
-                    gv.SORTING_DIR
+                    SORTING_DIR
                     + orderDueDate
-                    + gv.DIR_LOOKUP[material]
+                    + GVH["Lookups"]["Paper Dirs"][material]
                     + "Full/"
-                    + gv.DIR_LOOKUP["RepeatDict"][repeat]
-                    + gv.DIR_LOOKUP[oddOrEven]
+                    + GVH["Lookups"]["Repeats"][repeat]
+                    + GVH["Lookups"]["Odds Dirs"][oddOrEven]
                     + printPdf.split("/")[-1]
                 )
         try_to_move_pdf(printPdf, newFilePath, friendlyName)
 
-    ordersInNeedsAttention = len(glob.glob(gv.NEEDS_ATTENTION_DIR + "*.pdf"))
+    ordersInNeedsAttention = len(glob.glob(NEEDS_ATTENTION_DIR + "*.pdf"))
     if ordersInNeedsAttention > 0:
         print(
             f"\n| ****\n| 4 Needs Attention has {ordersInNeedsAttention} file(s) that need attention.\n| ****\n"
@@ -103,11 +111,11 @@ def sortPdfsToSortedFolders(pathToCheck, verbose=False):
 
 
 def unzipRenameSortPdfs():
-    zippedPackages = sortPackagesByOrderNumber(glob.glob(gv.DOWNLOAD_DIR + "*.zip"))
+    zippedPackages = sortPackagesByOrderNumber(glob.glob(DOWNLOAD_DIR + "*.zip"))
     for package in zippedPackages:
         try:
             fileToUnzipTo = (
-                gv.DOWNLOAD_DIR + (package.split("/")[-1].split("_")[0]) + "/"
+                DOWNLOAD_DIR + (package.split("/")[-1].split("_")[0]) + "/"
             )
             with zf.ZipFile(package, "r") as zip_ref:
                 zip_ref.extractall(fileToUnzipTo)
@@ -138,7 +146,7 @@ def unzipRenameSortPdfs():
         "had OT panels that couldn't be read and were moved to 4 Needs Attention",
     )
 
-    cleanupDownloadDir(gv.DOWNLOAD_DIR)
+    cleanupDownloadDir(DOWNLOAD_DIR)
 
     transfer_files_from_drive()
 
@@ -163,7 +171,7 @@ def renamePdfWithDetails(openFile, JSONitem, JSONPath, fileToUnzipTo, count):
     keepTrackOfOrderNumber(orderNumber)
     orderTroubleStatus = openFile["type"]
     orderDueDate = openFile["orderDueDate"]
-    shipVia = gv.SHIP_METHODS[openFile["shippingInfo"]["method"]["shipvia"]]
+    shipVia = GV["Shipping Methods"][openFile["shippingInfo"]["method"]["shipvia"]]
     originalPDFName = JSONitem["filename"]
     orderItemID = originalPDFName.split("_")[0]
     itemID = originalPDFName.split("_")[0]
@@ -175,7 +183,7 @@ def renamePdfWithDetails(openFile, JSONitem, JSONPath, fileToUnzipTo, count):
         )
     except IndexError:
         templateName = JSONitem["description"].split(" Wallpaper")[0]
-    paperType = gv.SUBSTRATE[JSONitem["paper"]]
+    paperType = GVH["Lookups"]["Substrate"][JSONitem["paper"]]
     quantity = JSONitem["quantityOrdered"]
     height = JSONitem["height"]
     width = JSONitem["width"]
@@ -228,7 +236,7 @@ def renamePdfWithDetails(openFile, JSONitem, JSONPath, fileToUnzipTo, count):
     if orderTroubleStatus != "new":
         applyTag(
             "order trouble",
-            gv.DOWNLOAD_DIR
+            DOWNLOAD_DIR
             + "/"
             + get_pdf.order_number(newPDFName)
             + "/"
@@ -237,8 +245,8 @@ def renamePdfWithDetails(openFile, JSONitem, JSONPath, fileToUnzipTo, count):
         )
     keepTrackOfPDF(orderNumber, originalPDFName)
     count += 1
-    if orderNumber in gv.ORDER_ITEMS_DICT:
-        gv.ORDER_ITEMS_DICT[orderNumber][itemID] = {
+    if orderNumber in GVH["Order Items Dicts"]:
+        GVH["Order Items Dicts"][orderNumber][itemID] = {
             "Status": "Sorted",
             "Due Date": orderDueDate,
             "Shipping": shipVia,
@@ -251,16 +259,16 @@ def renamePdfWithDetails(openFile, JSONitem, JSONPath, fileToUnzipTo, count):
             "Width": width,
             "Height": height,
             "OT Notes": otNotes,
-            "File Path": gv.SORTING_DIR
+            "File Path": SORTING_DIR
             + "2 - Late/"
-            + gv.DIR_LOOKUP[paperType]
-            + gv.DIR_LOOKUP[orderSize]
-            + gv.DIR_LOOKUP["RepeatDict"][int(repeat.split("'")[0])]
-            + gv.DIR_LOOKUP[int(quantity) % 2]
+            + GVH["Lookups"]["Paper Dirs"][paperType]
+            + GVH["Lookups"]["Size Dirs"][orderSize]
+            + GVH["Lookups"]["Repeats"][int(repeat.split("'")[0])]
+            + GVH["Lookups"]["Odds Dirs"][int(quantity) % 2]
             + newPDFName,
         }
     else:
-        gv.ORDER_ITEMS_DICT[orderNumber] = {
+        GVH["Order Items Dicts"][orderNumber] = {
             itemID: {
                 "Status": "Sorted",
                 "Due Date": orderDueDate,
@@ -274,12 +282,12 @@ def renamePdfWithDetails(openFile, JSONitem, JSONPath, fileToUnzipTo, count):
                 "Width": width,
                 "Height": height,
                 "OT Notes": otNotes,
-                "File Path": gv.SORTING_DIR
+                "File Path": SORTING_DIR
                 + "2 - Late/"
-                + gv.DIR_LOOKUP[paperType]
-                + gv.DIR_LOOKUP[orderSize]
-                + gv.DIR_LOOKUP["RepeatDict"][int(repeat.split("'")[0])]
-                + gv.DIR_LOOKUP[int(quantity) % 2]
+                + GVH["Lookups"]["Paper Dirs"][paperType]
+                + GVH["Lookups"]["Size Dirs"][orderSize]
+                + GVH["Lookups"]["Repeats"][int(repeat.split("'")[0])]
+                + GVH["Lookups"]["Odds Dirs"][int(quantity) % 2]
                 + newPDFName,
             }
         }
@@ -333,7 +341,7 @@ def renamePDF(old, new, JSONFilePath):
         remove(dirPath + old + " - temp.pdf")
     except OSError:
         try:
-            move(JSONFilePath, gv.needsAttention)
+            move(JSONFilePath, NEEDS_ATTENTION_DIR)
         except:
             pass
         missing_pdf_list.append(itemName.split("-")[0])
@@ -341,25 +349,25 @@ def renamePDF(old, new, JSONFilePath):
 
 
 def keepTrackOfPDF(orderNumber, pdfFileName):
-    if pdfFileName in gv.COUNT_OF_REF_PDFS[orderNumber]:
-        gv.COUNT_OF_REF_PDFS[orderNumber][pdfFileName] += 1
+    if pdfFileName in GVH["Count of Refd PDFs"][orderNumber]:
+        GVH["Count of Refd PDFs"][orderNumber][pdfFileName] += 1
     else:
-        gv.COUNT_OF_REF_PDFS[orderNumber][pdfFileName] = 1
+        GVH["Count of Refd PDFs"][orderNumber][pdfFileName] = 1
 
 
 def keepTrackOfOrderNumber(
     orderNumber,
 ):  # keeps track of the original PDF names to alert fulfillment to multi-paper type PDFs
-    if orderNumber in gv.COUNT_OF_REF_PDFS:
+    if orderNumber in GVH["Count of Refd PDFs"]:
         pass
     else:
-        gv.COUNT_OF_REF_PDFS[orderNumber] = {}
+        GVH["Count of Refd PDFs"][orderNumber] = {}
 
 
 def reportDuplicatePDFs():  # prints out any PDFs from keepTrackOfOrderNumber() that have a count of 2 or more
-    for orderNumber in gv.COUNT_OF_REF_PDFS:
-        for pdfName in gv.COUNT_OF_REF_PDFS[orderNumber]:
-            if gv.COUNT_OF_REF_PDFS[orderNumber][pdfName] > 1:
+    for orderNumber in GVH["Count of Refd PDFs"]:
+        for pdfName in GVH["Count of Refd PDFs"][orderNumber]:
+            if GVH["Count of Refd PDFs"][orderNumber][pdfName] > 1:
                 print(
                     "\n| The following Order has samples with multiple material types:"
                 )
@@ -418,7 +426,7 @@ def splitMultiPagePDFs(pathGlobToCheck):
             damaged_pdf_list.append(get_pdf.name(file))
             move(
                 file,
-                gv.NEEDS_ATTENTION_DIR
+                NEEDS_ATTENTION_DIR
                 + file.split("/")[-1].split(".pdf")[0]
                 + "_DAMAGED.pdf",
             )
@@ -547,21 +555,20 @@ def try_to_move_pdf(
 def transfer_files_from_drive():
     # New name convention: 300013884-1-(2022-02-02)-Stnd-Wv-Samp-Rp 2-Qty 1-Watercolor Herringbone-L9.5-W25-H9
 
-    pdfDict = gv.DIR_LOOKUP
-    list_to_transfer = glob(gv.driveLocation + "/*.pdf")
+    list_to_transfer = glob(DRIVE_DIR + "/*.pdf")
     if len(list_to_transfer) < 1:
         print("\n| No files to transfer from Google Drive.")
         return
     for print_pdf in list_to_transfer:
         pdf_name = get_pdf.name(print_pdf)
         pdf_friendly_name = get_pdf.friendly_name(pdf_name)
-        pdf_material = pdfDict[get_pdf.material(pdf_name)]
-        pdf_order_size = pdfDict[get_pdf.size(pdf_name)]
-        pdf_repeat = pdfDict["RepeatDict"][get_pdf.repeat(pdf_name)]
-        even_or_odd = pdfDict[get_pdf.odd_or_even(pdf_name)]
+        pdf_material = GVH["Lookups"]["Papere Dirs"][get_pdf.material(pdf_name)]
+        pdf_order_size = GVH["Lookups"]["Size Dirs"][get_pdf.size(pdf_name)]
+        pdf_repeat = GVH["Lookups"]["Repeats"][get_pdf.repeat(pdf_name)]
+        even_or_odd = GVH["Lookups"]["Odds Dors"][get_pdf.odd_or_even(pdf_name)]
         if pdf_order_size == "Full":
             dest_path = (
-                gv.SORTING_DIR
+                SORTING_DIR
                 + "3 - Today/"
                 + pdf_material
                 + pdf_order_size
@@ -572,7 +579,7 @@ def transfer_files_from_drive():
             )
         else:
             dest_path = (
-                gv.SORTING_DIR
+                SORTING_DIR
                 + "3 - Today/"
                 + pdf_material
                 + pdf_order_size

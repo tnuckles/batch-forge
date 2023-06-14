@@ -21,7 +21,9 @@ from wallpaper_sorter_functions import (
     splitMultiPagePDFs,
     ot_panel_unknown_list,
 )
-from wallpaper_sorter_variables import DOWNLOAD_DIR
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
+
+DOWNLOAD_DIR = GVH["Caldera Dirs"]["Downloads"]
 
 
 SORT_RESULTS = []

@@ -5,11 +5,19 @@ from math import floor
 from tkinter import *
 from tkinter import ttk
 
-import batch_variables as bv
 import get_pdf_data as get_pdf
-from batch_sorting import *
-from wallpaper_sorter_variables import PAPER_TYPES, SORTING_DIR
+from batch_forge_config import BATCHING_VARS as BV
+from batch_forge_config import BATCHING_VARS_HIDDEN as BVH
+from batch_forge_config import GENERAL_VARS as GV
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
 from batch_logic import build_a_batch
+from batch_sorting import *
+
+# Necessary Caldera Directories
+SORTING_DIR = GVH["Caldera Dirs"]["Sorting"]
+HEIGHT_LIST = BV["Height List"]
+BATCH_CONTENTS = BVH["Batch Content Options"]
+PAPER_TYPES = GV["Paper Types"]
 
 
 def batch_orders_window(root) -> None:
@@ -29,7 +37,7 @@ def batch_orders_window(root) -> None:
     panel_count_label.grid(column=0, row=0, rowspan=4)
 
     row_count = 1
-    for height in bv.height_list:
+    for height in HEIGHT_LIST:
         if height == 9:
             height = "Samples"
         elif height == 146.25:
@@ -74,7 +82,7 @@ def batch_orders_window(root) -> None:
         material_btn.grid(row=options_frame_row_count, column=1, sticky=W)
         options_frame_row_count += 1
 
-    batch_material_var.set(PAPER_TYPES[0])
+    batch_material_var.set(PAPER_TYPES["Smooth"]["Name"])
 
     # Include Samples Label and Checkbutton
     batch_contents_label = Label(options_frame, text="Batch Contents:", justify=LEFT)
@@ -83,18 +91,19 @@ def batch_orders_window(root) -> None:
     global batch_contents_var
     batch_contents_var = IntVar()
 
-    for option in bv.batch_content_options:
+    for option in BATCH_CONTENTS:
         content_checkbutton = Radiobutton(
             options_frame,
             variable=batch_contents_var,
-            value=option[0],
-            text=option[1],
+            value=option,
+            text=BATCH_CONTENTS[option],
             justify=LEFT,
             command=lambda: update_batch_specs(),
         )
         content_checkbutton.grid(row=options_frame_row_count, column=1, sticky=W)
         options_frame_row_count += 1
-    batch_contents_var.set(bv.batch_content_options[0][0])
+        if option == 0:
+            batch_contents_var.set(option)
 
     # Order Trouble Label and Checkbutton
     order_trouble_label = Label(
@@ -380,7 +389,7 @@ def get_available_batches(
     returns a count of available batches.
     """
     potential_length = 0
-    for height in bv.height_list:
+    for height in HEIGHT_LIST:
         if batch_contents == 1:
             if height == 9:
                 pass
@@ -444,7 +453,7 @@ def display_pdf_counts(frame, material, column) -> int:
         material_label = Label(frame, text=material)
         material_label.grid(column=column, row=row_count, padx=1, pady=1)
         row_count += 1
-    for height in bv.height_list:
+    for height in HEIGHT_LIST:
         height_count = Label(frame, text=(str(get_qty_of_pdfs(material, height))))
         height_count.grid(column=column, row=row_count, padx=1, pady=1, sticky=EW)
         row_count += 1

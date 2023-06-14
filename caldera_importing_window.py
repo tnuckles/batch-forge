@@ -5,25 +5,24 @@ import pathlib
 from datetime import datetime, timedelta
 from glob import glob
 from os.path import getatime
-from shutil import rmtree
+from shutil import rmtree, Error, copy
 from time import ctime
 from tkinter import *
 from tkinter import ttk
 
-import batch_variables as bv
-import caldera_importing_variables as cv
+from batch_forge_config import BATCHING_VARS as BV
+from batch_forge_config import BATCHING_VARS_HIDDEN as BVH
+from batch_forge_config import GENERAL_VARS as GV
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
+from batch_forge_config import IMPORTER_VARS as IV
 import get_pdf_data as get_pdf
 from batch_sorting import *
 from caldera_importing_logic import *
-from wallpaper_sorter_variables import (
-    BATCH_FOLDERS_DIR,
-    HOTFOLDERS_DIR,
-    PAPER_TYPES,
-    PAST_ORDERS_DIR,
-)
-
 
 today = datetime.today()
+
+PAST_ORDERS_DIR = GVH["Caldera Dirs"]["Past Batches"]
+BATCH_FOLDERS_DIR = GVH["Caldera Dirs"]["Batches"]
 
 global status_dict
 status_dict = {}
@@ -59,17 +58,17 @@ def caldera_import_window(root) -> None:
     printer_column = 0
 
     # Set printer frames
-    for printer_index in cv.PRINTER_DICT:
+    for printer_index in IV["Printers"]:
         if printer_index == "4":
             # 4 Is unlucky in Japan, so we don't have a 4th printer.
             # We skipped straight to the 5th.
             continue
 
         # Printer ID is printer name: 'Ichi', 'Ni', 'San', 'Go', etc.
-        printer_id = cv.PRINTER_DICT[printer_index][0]
+        printer_id = IV["Printers"][printer_index][0]
 
         # Printer Path is the path variable in the directory: '1 Ichi/', etc.
-        printer_path = cv.PRINTER_DICT[printer_index][1]
+        printer_path = IV["Printers"][printer_index][1]
 
         # Setup status dict
         status_dict[printer_index] = {"name": printer_id, "path": printer_path}
@@ -93,7 +92,7 @@ def caldera_import_window(root) -> None:
         # Set printer name label
         printer_name_label = Label(
             printer_frame,
-            text=cv.PRINTER_DICT[printer_index][0],
+            text=IV["Printers"][printer_index][0],
             justify=CENTER,
             font=("Arial", 25),
         )
@@ -107,7 +106,7 @@ def caldera_import_window(root) -> None:
         row_counter = 0
 
         # Loop through to add each printer's paper type to the label
-        for paper in PAPER_TYPES:
+        for paper in GV["Paper Types"]:
             status_dict[printer_index][paper] = {}
             paper_counter = 0
             paper_type = paper
@@ -233,7 +232,7 @@ def get_lock_status(locked_batch: str) -> tuple[str, str]:
     import_time = datetime.strptime(
         ctime(getatime(locked_batch)), "%a %b %d %H:%M:%S %Y"
     )
-    unlock_time = import_time + timedelta(minutes=cv.LOCK_IMPORTING_BATCH)
+    unlock_time = import_time + timedelta(minutes=IV["Import Batch Lock Time"])
     if current_time < unlock_time:
         button_text = f"Batch locked until {unlock_time}"
         return button_text, DISABLED
@@ -300,7 +299,8 @@ def batch_select_window(paper: str, printer_path: str) -> None:
     selector_window_frame.pack()
 
     # Iterate over priority options to make a frame for each
-    for priority in bv.PRIORITY_OPTIONS:
+    for priority in BV["Priorities"]:
+        priority = BV["Priorities"][priority]
         # Set labelFrame for each priority
         priority_frame = LabelFrame(
             selector_window_frame, text=priority, padx=20, pady=5
@@ -453,12 +453,16 @@ def export_batch(paper: str, printer_path: str) -> None:
         try_to_move_pdf(print_pdf, batch_dir, friendly_name)
 
     # Checks user preferences for whether or not to compress exported batch
-    if cv.COMPRESS_EXPORTED_BATCHES is True:
+    if IV["Compress Exported Batches"] is True:
         zipped_batch_dir = zip_batch_for_export(batch_dir)
         move(zipped_batch_dir, PAST_ORDERS_DIR)
         rmtree(batch_dir)
     else:
-        move(batch_dir, PAST_ORDERS_DIR)
+        try:
+            move(batch_dir, PAST_ORDERS_DIR)
+        except Error:
+            copy(batch_dir, PAST_ORDERS_DIR)
+            rmtree(batch_dir)
 
     return refresh_printer_statuses()
 

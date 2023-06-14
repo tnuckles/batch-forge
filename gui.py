@@ -10,7 +10,7 @@ from batching_window import batch_orders_window
 from caldera_importing_window import caldera_import_window
 from sorter_window import sort_zipped_packages_window
 from wallpaper_sorter_functions import moveForDueDates
-from wallpaper_sorter_variables import SORTING_DIR, DOWNLOAD_DIR
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
 
 # Checks for config file and first-time setup
 print(getcwd())
@@ -23,8 +23,6 @@ installation_dir = "/Users/Trevor/Documents/Scripts/batch-forge/"
 # while testing and developing.
 caldera_path = "/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/"
 """caldera_path = '/Users/caldera/Desktop/gui_testing/"""
-downloadDir = caldera_path + "3 Downloaded/"
-sortingDir = caldera_path + "5 Sorted for Print/"
 
 
 # try:
@@ -36,6 +34,11 @@ sortingDir = caldera_path + "5 Sorted for Print/"
 #     pass
 
 sort_results = []
+
+# Necessary Caldera Directories
+DOWNLOAD_DIR = GVH["Caldera Dirs"]["Downloads"]
+SORTING_DIR = GVH["Caldera Dirs"]["Sorting"]
+
 
 # Initilize TK and main menu window
 root = Tk()

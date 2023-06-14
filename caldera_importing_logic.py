@@ -12,7 +12,9 @@ from time import sleep
 import batch_sorting as bs
 import get_pdf_data as get_pdf
 from batch_logic import try_to_move_pdf
-from wallpaper_sorter_variables import HOTFOLDERS_DIR
+from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
+
+HOTFOLDERS_DIR = GVH["Caldera Dirs"]["Hotfolders"]
 
 
 def sort_batches_by_ID(batchList: list) -> list:
