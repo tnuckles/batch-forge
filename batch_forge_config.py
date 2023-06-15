@@ -8,7 +8,7 @@ CALDERA_DIR = '/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/'
 DRIVE_DIR = ''
 
 GENERAL_VARS = {
-    "Printer Waste": 45, # In inches
+    "Printer Waste": 45 + 51, # In inches. First number is takeup waste and second number is trailing waste.
     'Full Samp Split': 0.92, # As a percentage. This is the percentage that batching will try to fill with full, then save the rest for samples.
     'Paper Types': {
         "Smooth": {
@@ -184,7 +184,7 @@ IMPORTER_VARS = {
         "4": ["Shi", "4 Shi/"], # This will always be skipped.
         "5": ["Go", "5 Go/"],
     },
-    "Import Batch Lock Time": 5,
+    "Import Batch Lock Time": 20,
     "Compress Exported Batches": False,
 }
 

@@ -77,17 +77,12 @@ def caldera_import_window(root) -> None:
         printer_frame = Frame(importer_window, padx=15, pady=10, relief=SUNKEN, bd=8)
         printer_frame.grid(row=printer_row, column=printer_column, sticky="nsew")
 
-        # Logic to display printers in a 2-column grid. Probably a neater way to do this
-        if printer_row % 2 == 0:
-            if printer_column % 2 == 0:
-                printer_column += 1
-            else:
-                printer_row += 1
+        # Logic to display printers in a 2-column grid.
+        if printer_column == 0:
+            printer_column += 1
         else:
-            if printer_column % 2 == 1:
-                printer_column -= 1
-            else:
-                printer_row += 1
+            printer_row += 1
+            printer_column = 0
 
         # Set printer name label
         printer_name_label = Label(

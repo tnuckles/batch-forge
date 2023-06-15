@@ -91,7 +91,7 @@ def move_to_hotfolder(
         progress_dict["label"].config(text=f"Moving {friendly_name}")
         progress_dict["frame"].update()
         try_to_move_pdf(printPdf, receiving_hotfolder, friendly_name)
-        sleep(0.125)
+        sleep(0.25)
         progress_dict["bar"]["value"] += 1
         progress_dict["frame"].update()
     return

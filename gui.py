@@ -12,26 +12,8 @@ from sorter_window import sort_zipped_packages_window
 from wallpaper_sorter_functions import moveForDueDates
 from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
 
-# Checks for config file and first-time setup
-print(getcwd())
-
 # Set Installation Directory. Don't actually know if I'll really need this.
 installation_dir = "/Users/Trevor/Documents/Scripts/batch-forge/"
-"""installation_dir = '/Users/caldera/Downloads/batch-forge-batching_gui/"""
-
-# Startup sorting copy tree just to make my life easier
-# while testing and developing.
-caldera_path = "/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/"
-"""caldera_path = '/Users/caldera/Desktop/gui_testing/"""
-
-
-# try:
-#     shutil.rmtree(caldera_path + '5 Sorted for Print')
-#     shutil.copytree(caldera_path + '5 Sorted for Print Copy',
-#                     caldera_path + '5 Sorted for Print')
-#     moveForDueDates(glob(SORTING_DIR + '**/*.pdf', recursive=True))
-# except:
-#     pass
 
 sort_results = []
 
