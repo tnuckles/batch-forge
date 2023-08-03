@@ -1,7 +1,7 @@
 # /Users/Trevor/Documents/Scripts/batch-forge python
 
 from glob import glob
-from math import floor
+from math import floor, ceil
 from tkinter import *
 from tkinter import ttk
 
@@ -28,13 +28,19 @@ def batch_orders_window(root) -> None:
     # Initialize Batch Window
     batch_window = Toplevel(root)
     batch_window.title("Build-A-Batch")
-    batch_window.geometry("728x591")
-    batch_window.minsize(728, 591)
-    batch_window.maxsize(728, 591)
+    # batch_window.geometry("728x591")
+    # batch_window.minsize(728, 591)
+    # batch_window.maxsize(728, 591)
+
+    # Set the rows and columns to adjust as the window resizes
+    batch_window.columnconfigure(0, weight=1)
+    batch_window.columnconfigure(1, weight=1)
+    batch_window.rowconfigure(0, weight=1)
+    batch_window.rowconfigure(1, weight=1)
 
     # Initialize frame that contains counts of different PDF heights
     panel_count_label = Frame(batch_window, padx=10, pady=10, relief=SUNKEN, bd=8)
-    panel_count_label.grid(column=0, row=0, rowspan=4)
+    panel_count_label.grid(column=0, row=0, rowspan=4, sticky="nsew")
 
     row_count = 1
     for height in HEIGHT_LIST:
@@ -60,7 +66,7 @@ def batch_orders_window(root) -> None:
     options_frame_row_count = 0
     # Options Frame
     options_frame = Frame(batch_window, padx=10, pady=10, bd=8, relief=SUNKEN)
-    options_frame.grid(column=1, row=options_frame_row_count, sticky=EW)
+    options_frame.grid(column=1, row=options_frame_row_count, sticky="nsew")
 
     # Material Selection
     material_label = Label(
@@ -124,6 +130,48 @@ def batch_orders_window(root) -> None:
     )
     batch_ot_checkbutton.select()
     batch_ot_checkbutton.grid(row=options_frame_row_count, column=1, sticky=W)
+    options_frame_row_count += 1
+
+    # Head Waste and Checkbutton
+    head_waste_label = Label(
+        options_frame, text="Include Head Waste?", justify=LEFT
+    )
+    head_waste_label.grid(row=options_frame_row_count, column=0, sticky=W)
+
+    global head_waste_var
+    head_waste_var = BooleanVar()
+    head_waste_var.set(True)
+    head_waste_checkbutton = Checkbutton(
+        options_frame,
+        variable=head_waste_var,
+        onvalue=True,
+        offvalue=False,
+        justify=LEFT,
+        command=lambda: update_batch_specs(),
+    )
+    head_waste_checkbutton.select()
+    head_waste_checkbutton.grid(row=options_frame_row_count, column=1, sticky=W)
+    options_frame_row_count += 1
+
+    # Tail Waste and Checkbutton
+    tail_waste_label = Label(
+        options_frame, text="Include Tail Waste?", justify=LEFT
+    )
+    tail_waste_label.grid(row=options_frame_row_count, column=0, sticky=W)
+
+    global tail_waste_var
+    tail_waste_var = BooleanVar()
+    tail_waste_var.set(True)
+    tail_waste_checkbutton = Checkbutton(
+        options_frame,
+        variable=tail_waste_var,
+        onvalue=True,
+        offvalue=False,
+        justify=LEFT,
+        command=lambda: update_batch_specs(),
+    )
+    tail_waste_checkbutton.select()
+    tail_waste_checkbutton.grid(row=options_frame_row_count, column=1, sticky=W)
     options_frame_row_count += 1
 
     # Minimum Length Enforcement Label and Checkbutton
@@ -231,7 +279,7 @@ def batch_orders_window(root) -> None:
 
     # Initialize Batch Progress Bar
     batch_progress_frame = Frame(batch_window, padx=5, pady=9, bd=8, relief=SUNKEN)
-    batch_progress_frame.grid(row=2, column=1, sticky=EW)
+    batch_progress_frame.grid(row=2, column=1, sticky="nsew")
 
     batch_progress_label = Label(batch_progress_frame, text="Idle.", padx=2)
     batch_progress_label.grid(columnspan=2)
@@ -254,7 +302,7 @@ def batch_orders_window(root) -> None:
 
     # Initialize Batch Button
     batch_btn_frame = Frame(batch_window, padx=5, pady=10, bd=8, relief=SUNKEN)
-    batch_btn_frame.grid(row=1, column=1, sticky=EW)
+    batch_btn_frame.grid(row=1, column=1, sticky="nsew")
 
     global batch_btn
     batch_btn = Button(
@@ -272,6 +320,8 @@ def batch_orders_window(root) -> None:
             batch_length_var.get(),
             batch_contents_var.get(),
             batch_ot_var.get(),
+            head_waste_var.get(),
+            tail_waste_var.get(),
             batch_minimum_var.get(),
         ),
     )
@@ -279,7 +329,7 @@ def batch_orders_window(root) -> None:
 
     # Initialize Return Button
     close_btn_frame = Frame(batch_window, padx=5, pady=10, bd=8, relief=SUNKEN)
-    close_btn_frame.grid(row=4, column=0, columnspan=2, sticky=EW)
+    close_btn_frame.grid(row=4, column=0, columnspan=2, sticky="nsew")
 
     close_btn = Button(
         close_btn_frame,
@@ -292,7 +342,7 @@ def batch_orders_window(root) -> None:
 
     # Show Directory Path
     directory_frame = Frame(batch_window, padx=2, pady=2, bd=1, relief=SUNKEN)
-    directory_frame.grid(row=5, column=0, columnspan=2, sticky=EW)
+    directory_frame.grid(row=5, column=0, columnspan=2, sticky="nsew")
 
     directory_label = Label(directory_frame, text="Sorted Directory: " + SORTING_DIR)
     directory_label.pack()
@@ -385,8 +435,8 @@ def get_available_batches(
 ) -> int:
     """
     Accepts a material type and batch_length, and optionally accepts include_OT
-    as a boolean. Calls get_length_of_pdfs to get a list of matching PDFs, then
-    returns a count of available batches.
+    as a boolean and batch_contents as an int. Calls get_length_of_pdfs to get
+    a list of matching PDFs, then returns a count of available batches.
     """
     potential_length = 0
     for height in HEIGHT_LIST:
@@ -409,7 +459,14 @@ def get_available_batches(
                 material, height, include_OT, batch_contents
             )
 
-    available_batches = floor(potential_length / (batch_length * 12))
+    # Get Printer Waste
+    printer_waste = 0
+    if head_waste_var:
+        printer_waste += GV["Waste"]["Head"]
+    if tail_waste_var:
+        printer_waste += GV["Waste"]["Tail"]
+
+    available_batches = ceil(potential_length / (((batch_length * 12)) - printer_waste))
 
     return available_batches
 
@@ -454,7 +511,8 @@ def display_pdf_counts(frame, material, column) -> int:
         material_label.grid(column=column, row=row_count, padx=1, pady=1)
         row_count += 1
     for height in HEIGHT_LIST:
-        height_count = Label(frame, text=(str(get_qty_of_pdfs(material, height))))
+        # height_count = Label(frame, text=(str(get_qty_of_pdfs(material, height))))
+        height_count = Label(frame, text=(str(get_length_of_pdfs(material, height))))
         height_count.grid(column=column, row=row_count, padx=1, pady=1, sticky=EW)
         row_count += 1
     column += 1
@@ -478,7 +536,7 @@ def get_qty_of_pdfs(
         count += get_pdf.quantity(print_pdf)
 
     return count
-
+        
 
 def get_list_of_pdfs(
     material: str, height: float, include_OT: bool = True, batch_contents: int = 0

@@ -1,14 +1,26 @@
 '''
 Configuration file for Batch Forge
 '''
+import os
 
 from sqlitedict import SqliteDict
 
-CALDERA_DIR = '/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/'
-DRIVE_DIR = ''
+# Location for Caldera's Folders
+if os.path.expanduser("~").split("/")[-1] == "Trevor":
+    CALDERA_DIR = "/Users/Trevor/Documents/Scripts/Misc/caldera/var/public/"
+    DRIVE_DIR = "/Volumes/GoogleDrive/Shared drives/# Production/#LvD Test Fulfillment"
+    INSTALLATION_DIR = "/Users/Trevor/Documents/Scripts/batch-forge/"
+else:
+    CALDERA_DIR = "/opt/caldera/var/public/"
+    DRIVE_DIR = "/Users/caldera/Library/CloudStorage/GoogleDrive-matthew@lovevsdesign.com/Shared Drives/# Production/#LvD Fulfillment"
+    INSTALLATION_DIR = "/Users/caldera/Desktop/batch-forge-main/"
 
 GENERAL_VARS = {
-    "Printer Waste": 45 + 51, # In inches. First number is takeup waste and second number is trailing waste.
+    # "Printer Waste": 45 + 51, # In inches. First number is takeup waste and second number is trailing waste.
+    "Waste": {
+        "Head": 45, # In inches. Amount of waste to get a batch on the takeup reel.
+        "Tail": 51, # In inches. Amount of waste created from the end of the roll of paper to where printing begins.
+    },
     'Full Samp Split': 0.92, # As a percentage. This is the percentage that batching will try to fill with full, then save the rest for samples.
     'Paper Types': {
         "Smooth": {
@@ -23,10 +35,10 @@ GENERAL_VARS = {
             "Dir Name": "Woven/",
             "Length": 150,
         },
-        "Traditional":{
-            "Name": 'Traditional',
-            "Short Name": "Tr",
-            "Dir Name": "Traditional/",
+        "Glissade":{
+            "Name": 'Glissade',
+            "Short Name": "Gs",
+            "Dir Name": "Glissade/",
             "Length": 150,
         },
     },
@@ -39,6 +51,7 @@ GENERAL_VARS = {
         "Rush": "Rush",
         "International Rush": "InRush",
     },
+    
 }
 
 GENERAL_VARS_HIDDEN = {
@@ -56,8 +69,8 @@ GENERAL_VARS_HIDDEN = {
             "Smooth": GENERAL_VARS['Paper Types']['Smooth']['Dir Name'],
             "Wv": GENERAL_VARS['Paper Types']['Woven']['Dir Name'],  # Woven Folders
             "Woven": GENERAL_VARS['Paper Types']['Woven']['Dir Name'],
-            "Tr": GENERAL_VARS['Paper Types']['Traditional']['Dir Name'],  # Traditional Folders
-            "Traditional": GENERAL_VARS['Paper Types']['Traditional']['Dir Name']
+            "Gs": GENERAL_VARS['Paper Types']['Glissade']['Dir Name'],  # Glissade Folders
+            "Glissade": GENERAL_VARS['Paper Types']['Glissade']['Dir Name']
         },
         'Size Dirs': {
             "Full": "Full/",  # Full Folders
@@ -88,12 +101,12 @@ GENERAL_VARS_HIDDEN = {
             0: "Even Panels/",
         },
         "Material Length": {  # Determines printable length. Rolls are ~150 feet, but 45 inches are lost for printer waste.
-            "Smooth": (GENERAL_VARS['Paper Types']['Smooth']['Length']* 12 - GENERAL_VARS["Printer Waste"]),
-            "Sm": (GENERAL_VARS['Paper Types']['Smooth']['Length']* 12 - GENERAL_VARS["Printer Waste"]),
-            "Woven": (GENERAL_VARS['Paper Types']['Woven']['Length']* 12 - GENERAL_VARS["Printer Waste"]),
-            "Wv": (GENERAL_VARS['Paper Types']['Woven']['Length']* 12 - GENERAL_VARS["Printer Waste"]),
-            "Traditional": (GENERAL_VARS['Paper Types']['Traditional']['Length']* 12 - GENERAL_VARS["Printer Waste"]),
-            "Tr": (GENERAL_VARS['Paper Types']['Traditional']['Length']* 12 - GENERAL_VARS["Printer Waste"]),
+            "Smooth": (GENERAL_VARS['Paper Types']['Smooth']['Length']* 12 - GENERAL_VARS["Waste"]["Head"] + GENERAL_VARS["Waste"]["Tail"]),
+            "Sm": (GENERAL_VARS['Paper Types']['Smooth']['Length']* 12 - GENERAL_VARS["Waste"]["Head"] + GENERAL_VARS["Waste"]["Tail"]),
+            "Woven": (GENERAL_VARS['Paper Types']['Woven']['Length']* 12 - GENERAL_VARS["Waste"]["Head"] + GENERAL_VARS["Waste"]["Tail"]),
+            "Wv": (GENERAL_VARS['Paper Types']['Woven']['Length']* 12 - GENERAL_VARS["Waste"]["Head"] + GENERAL_VARS["Waste"]["Tail"]),
+            "Glissade": (GENERAL_VARS['Paper Types']['Glissade']['Length']* 12 - GENERAL_VARS["Waste"]["Head"] + GENERAL_VARS["Waste"]["Tail"]),
+            "Gs": (GENERAL_VARS['Paper Types']['Glissade']['Length']* 12 - GENERAL_VARS["Waste"]["Head"] + GENERAL_VARS["Waste"]["Tail"]),
         },
         "Substrate": {
             "Smooth Peel and Stick": GENERAL_VARS['Paper Types']['Smooth']['Short Name'],
@@ -102,8 +115,8 @@ GENERAL_VARS_HIDDEN = {
             "Woven Peel and Stick": GENERAL_VARS['Paper Types']['Woven']['Short Name'],
             "Woven": GENERAL_VARS['Paper Types']['Woven']['Short Name'],
             "Wv": GENERAL_VARS['Paper Types']['Woven']['Name'],
-            "Traditional": GENERAL_VARS['Paper Types']['Traditional']['Short Name'],
-            "Tr": GENERAL_VARS['Paper Types']['Traditional']['Name']
+            "Glissade": GENERAL_VARS['Paper Types']['Glissade']['Short Name'],
+            "Gs": GENERAL_VARS['Paper Types']['Glissade']['Name']
         },
     },
     # Running count of PDFs that are referenced during sample creating. If a PDF is referenced more than once, the order and PDF are printed to alert fulfillment of dual-type samples

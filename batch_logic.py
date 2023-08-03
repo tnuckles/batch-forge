@@ -39,6 +39,8 @@ def build_a_batch(
     batch_length: int,
     contents: int = 0,
     include_OTs: bool = True,
+    include_head_waste: bool = True,
+    include_tail_waste: bool = True,
     care_min_length: bool = True,
 ) -> None:
     """
@@ -77,8 +79,15 @@ def build_a_batch(
     # batch_progress_label = Label(batch_progress_frame, text='Working')
     # batch_progress_label.pack()
 
+    # Get Printer Waste
+    printer_waste = 0
+    if include_head_waste:
+        printer_waste += GV["Waste"]["Head"]
+    if include_tail_waste:
+        printer_waste += GV["Waste"]["Tail"]
+
     # Changes batch_length to inches
-    batch_length = (batch_length * 12) - GV["Printer Waste"]
+    batch_length = (batch_length * 12) - printer_waste
 
     # Sets progress bar maximum
     batch_progress_bar["maximum"] = batches_to_make
@@ -425,6 +434,10 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
     max_length = batch_dict["material_length"]
     sorted_list = available_pdfs
     batch_list = []
+    if max_length >= 480:
+        split_formula = max_length * GV["Full Samp Split"]
+    else:
+        split_formula = max_length
 
     current_section_length = 0
     find_odd = False
@@ -460,7 +473,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
             # If the current item in the iteration will put the batch over
             # max length, skip it.
             potential_length = current_section_length + current_length
-            if potential_length + pdf_length > max_length * GV["Full Samp Split"]:
+            if potential_length + pdf_length > split_formula:
                 continue
             else:
                 # Add the length of the item to the length of the batch
@@ -483,7 +496,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
                     # length greater than the max length, skip it
                     potential_length = current_section_length + current_length
                     odd_adjustment = pdf_length - (pdf_height + 0.5)
-                    if potential_length + odd_adjustment > max_length * GV["Full Samp Split"]:
+                    if potential_length + odd_adjustment > split_formula:
                         continue
                     else:
                         # If the last item and current item match heights, are
@@ -500,7 +513,7 @@ def batch_loop_full(batch_dict: dict, batch_date_dict: dict, available_pdfs) -> 
                     # If the current item in the iteration will
                     # put the batch over the max length, skip it.
                     potential_length = current_section_length + current_length
-                    if potential_length + pdf_length > max_length * GV["Full Samp Split"]:
+                    if potential_length + pdf_length > split_formula:
                         continue
                     else:
                         # If the next item in the list doesn't match the

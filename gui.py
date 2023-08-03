@@ -3,7 +3,6 @@
 
 from glob import glob
 from tkinter import *
-from os import getcwd
 
 from batch_sorting import *
 from batching_window import batch_orders_window
@@ -11,9 +10,7 @@ from caldera_importing_window import caldera_import_window
 from sorter_window import sort_zipped_packages_window
 from wallpaper_sorter_functions import moveForDueDates
 from batch_forge_config import GENERAL_VARS_HIDDEN as GVH
-
-# Set Installation Directory. Don't actually know if I'll really need this.
-installation_dir = "/Users/Trevor/Documents/Scripts/batch-forge/"
+from batch_forge_config import INSTALLATION_DIR
 
 sort_results = []
 
@@ -24,7 +21,7 @@ SORTING_DIR = GVH["Caldera Dirs"]["Sorting"]
 
 # Initilize TK and main menu window
 root = Tk()
-app_image = Image("photo", file=installation_dir + "assets/batch_forge_icon.png")
+app_image = Image("photo", file=INSTALLATION_DIR + "assets/batch_forge_icon.png")
 root.call("wm", "iconphoto", root._w, app_image)
 root.title("Batch Forge")
 root.geometry("300x350")
